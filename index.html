@@ -14,47 +14,91 @@
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
-<body class="bg-slate-100 flex flex-col items-center p-8 font-sans">
-    
-    <h1 class="text-3xl font-bold mb-8 text-slate-800">Test Hazırlama Aracı</h1>
+<body class="bg-slate-200 font-sans h-screen flex overflow-hidden">
 
-    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-2xl text-center mb-8 border-2 border-dashed border-slate-300">
-        <p class="mb-4 text-slate-600 font-medium">Bir PDF deneme veya soru bankası yükleyin</p>
-        <input type="file" id="pdf-upload" accept="application/pdf" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
-    </div>
-
-    <div id="pdf-container" class="hidden flex-col items-center bg-white p-4 rounded-lg shadow-xl w-full max-w-4xl overflow-auto mb-8">
+    <aside class="w-80 bg-white border-r border-slate-300 shadow-xl flex flex-col p-4 overflow-y-auto z-10 relative">
+        <h2 class="text-xl font-bold text-slate-800 mb-6 border-b pb-2">Sınav Ayarları</h2>
         
-        <div class="flex items-center justify-between w-full mb-4 px-4">
-            <div class="flex items-center gap-4">
-                <button id="prev-page" class="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition font-medium">Önceki Sayfa</button>
-                <span class="py-2 text-slate-700 font-medium"><span id="page-num">0</span> / <span id="page-count">0</span></span>
-                <button id="next-page" class="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition font-medium">Sonraki Sayfa</button>
+        <div class="flex flex-col gap-4 mb-8">
+            <input type="text" id="input-test-name" placeholder="Test Adı" class="border border-slate-300 p-2 rounded focus:outline-none focus:border-blue-500" />
+            <input type="text" id="input-school-name" placeholder="Okul Adı" class="border border-slate-300 p-2 rounded focus:outline-none focus:border-blue-500" />
+            <input type="text" id="input-desc" placeholder="Test ile ilgili açıklama" class="border border-slate-300 p-2 rounded focus:outline-none focus:border-blue-500" />
+            
+            <div class="flex gap-2">
+                <input type="text" id="input-class" placeholder="Sınıf/Şube" class="border border-slate-300 p-2 rounded focus:outline-none focus:border-blue-500 w-1/2" />
+                <select class="border border-slate-300 p-2 rounded focus:outline-none focus:border-blue-500 w-1/2 text-slate-600">
+                    <option>Grup Yok</option>
+                    <option>A Grubu</option>
+                    <option>B Grubu</option>
+                </select>
             </div>
-            <button id="crop-btn" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition font-bold shadow">Seçili Alanı Soru Olarak Ekle</button>
         </div>
-        
-        <div class="relative border border-slate-300 shadow-sm w-full" style="min-height: 500px;">
-            <canvas id="pdf-render" class="hidden"></canvas>
-            <img id="pdf-image" src="" alt="PDF Sayfası" class="max-w-full block" />
-        </div>
-    </div>
 
-    <div id="questions-container" class="hidden w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-12">
-        <h2 class="text-2xl font-bold mb-4 border-b border-slate-200 pb-2 text-slate-800">Seçilen Sorular (Kağıt Taslağı)</h2>
-        <div id="questions-list" class="flex flex-col gap-6">
+        <button id="download-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition shadow-lg mt-auto">
+            Kağıdı Hazırla (PDF İndir)
+        </button>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-8 flex flex-col items-center gap-8">
+        
+        <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-4xl border border-slate-300">
+            <div class="mb-4">
+                <input type="file" id="pdf-upload" accept="application/pdf" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
             </div>
-    </div>
+
+            <div id="pdf-container" class="hidden flex-col items-center w-full">
+                <div class="flex items-center justify-between w-full mb-4 bg-slate-50 p-2 rounded border">
+                    <div class="flex items-center gap-2">
+                        <button id="prev-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm">Önceki</button>
+                        <span class="text-sm font-medium">Sayfa: <span id="page-num">0</span> / <span id="page-count">0</span></span>
+                        <button id="next-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm">Sonraki</button>
+                    </div>
+                    <button id="crop-btn" class="px-4 py-1.5 bg-green-600 text-white text-sm font-bold rounded hover:bg-green-700 transition">Seçili Alanı Ekle</button>
+                </div>
+                
+                <div class="relative border border-slate-300 w-full bg-slate-200" style="min-height: 400px;">
+                    <canvas id="pdf-render" class="hidden"></canvas>
+                    <img id="pdf-image" src="" alt="" class="max-w-full block" />
+                </div>
+            </div>
+        </div>
+
+        <div id="a4-paper" class="bg-white shadow-2xl relative w-[794px] min-h-[1123px] p-10 flex flex-col">
+            <div class="border-b-2 border-black pb-4 mb-6 text-center">
+                <h1 id="a4-school-name" class="text-lg font-bold uppercase mb-1">OKUL ADI</h1>
+                <h2 id="a4-test-name" class="text-xl font-extrabold uppercase mb-2">TEST ADI</h2>
+                <div class="flex justify-between text-sm font-medium">
+                    <span id="a4-desc" class="italic">Açıklama alanı</span>
+                    <div>
+                        Ad Soyad: ................................<br>
+                        Sınıf/No: <span id="a4-class">.....</span> / ........
+                    </div>
+                </div>
+            </div>
+            
+            <div id="questions-list" class="flex flex-col gap-8 flex-1">
+                </div>
+        </div>
+
+    </main>
 
     <script>
-        let pdfDoc = null,
-            pageNum = 1,
-            pageIsRendering = false,
-            pageNumIsPending = null,
-            cropper = null;
+        // SOL MENÜ VERİLERİNİ A4 KAĞIDINA ANLIK AKTARMA
+        const bindInput = (inputId, targetId, defaultText) => {
+            document.getElementById(inputId).addEventListener('input', (e) => {
+                document.getElementById(targetId).textContent = e.target.value || defaultText;
+            });
+        };
+        bindInput('input-test-name', 'a4-test-name', 'TEST ADI');
+        bindInput('input-school-name', 'a4-school-name', 'OKUL ADI');
+        bindInput('input-desc', 'a4-desc', 'Açıklama alanı');
+        bindInput('input-class', 'a4-class', '.....');
 
-        // PDF Kalitesi (2.0 ile daha net, okunaklı metinler elde ederiz)
+        // PDF VE KESME MANTIĞI
+        let pdfDoc = null, pageNum = 1, pageIsRendering = false, pageNumIsPending = null, cropper = null;
         const scale = 2.0; 
         const canvas = document.getElementById('pdf-render');
         const ctx = canvas.getContext('2d');
@@ -62,121 +106,103 @@
 
         const renderPage = num => {
             pageIsRendering = true;
-
             pdfDoc.getPage(num).then(page => {
                 const viewport = page.getViewport({ scale });
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
-
-                const renderCtx = { canvasContext: ctx, viewport: viewport };
-
-                page.render(renderCtx).promise.then(() => {
+                page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
                     pageIsRendering = false;
-                    
-                    // 1. Canvas'taki PDF'i bir resme dönüştür
                     imgElement.src = canvas.toDataURL('image/png');
-                    
-                    // 2. Eski cropper varsa temizle
-                    if (cropper) {
-                        cropper.destroy();
-                    }
-                    
-                    // 3. Yeni resim üzerinde Cropper.js başlat
+                    if (cropper) cropper.destroy();
                     cropper = new Cropper(imgElement, {
-                        viewMode: 1, // Kırpma kutusu resmin dışına çıkamaz
-                        autoCropArea: 0.5, // Başlangıçta ekranın %50'si kadar kutu aç
-                        zoomable: false, // Fare topuyla yakınlaştırmayı kapat
-                        movable: false, // Resmi hareket ettirmeyi kapat (sadece kutu hareket etsin)
+                        viewMode: 1, autoCropArea: 0.5, zoomable: false, movable: false,
                     });
-
-                    if (pageNumIsPending !== null) {
-                        renderPage(pageNumIsPending);
-                        pageNumIsPending = null;
-                    }
+                    if (pageNumIsPending !== null) { renderPage(pageNumIsPending); pageNumIsPending = null; }
                 });
-
                 document.getElementById('page-num').textContent = num;
             });
         };
 
         const queueRenderPage = num => {
-            if (pageIsRendering) {
-                pageNumIsPending = num;
-            } else {
-                renderPage(num);
-            }
+            if (pageIsRendering) pageNumIsPending = num;
+            else renderPage(num);
         };
 
         document.getElementById('prev-page').addEventListener('click', () => {
-            if (pageNum <= 1) return;
-            pageNum--;
-            queueRenderPage(pageNum);
+            if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum);
         });
 
         document.getElementById('next-page').addEventListener('click', () => {
-            if (pageNum >= pdfDoc.numPages) return;
-            pageNum++;
-            queueRenderPage(pageNum);
+            if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum);
         });
 
         document.getElementById('pdf-upload').addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file.type !== 'application/pdf') {
-                alert('Lütfen geçerli bir PDF dosyası yükleyin.');
-                return;
-            }
-
+            if (file.type !== 'application/pdf') return alert('Geçerli bir PDF yükleyin.');
             const fileReader = new FileReader();
             fileReader.onload = function() {
                 const typedarray = new Uint8Array(this.result);
-                
                 pdfjsLib.getDocument(typedarray).promise.then(pdfDoc_ => {
                     pdfDoc = pdfDoc_;
                     document.getElementById('page-count').textContent = pdfDoc.numPages;
                     document.getElementById('pdf-container').classList.remove('hidden');
                     document.getElementById('pdf-container').classList.add('flex');
-                    pageNum = 1;
-                    renderPage(pageNum);
+                    pageNum = 1; renderPage(pageNum);
                 });
             };
             fileReader.readAsArrayBuffer(file);
         });
 
-        // Kırpma Butonu İşlemi
+        // KESİLEN SORUYU A4'E EKLEME
         document.getElementById('crop-btn').addEventListener('click', () => {
             if (!cropper) return;
-            
-            // Seçili alanı yüksek kalitede canvas olarak al (Arka planı beyaz yap)
-            const croppedCanvas = cropper.getCroppedCanvas({
-                fillColor: '#fff', 
-            });
-            
+            const croppedCanvas = cropper.getCroppedCanvas({ fillColor: '#fff' });
             if (croppedCanvas) {
-                // Kırpılan resmi veri olarak al
                 const imgData = croppedCanvas.toDataURL('image/png');
                 
-                // Soru kutusunu oluştur
                 const questionDiv = document.createElement('div');
-                questionDiv.className = 'relative border border-slate-300 p-4 rounded-lg bg-slate-50 flex flex-col items-center group';
+                questionDiv.className = 'relative group w-full';
                 
-                // Resmi ekle
                 const img = document.createElement('img');
                 img.src = imgData;
-                img.className = 'max-w-full h-auto';
+                img.className = 'w-full h-auto object-contain'; // Soruyu kağıda sığdır
                 
-                // Silme butonu ekle
                 const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Bu Soruyu Sil';
-                deleteBtn.className = 'absolute top-2 right-2 bg-red-500 text-white px-3 py-1 text-sm rounded opacity-0 group-hover:opacity-100 transition shadow hover:bg-red-600';
+                deleteBtn.textContent = 'Sil';
+                // Silme butonuna "delete-btn" sınıfını ekliyoruz ki PDF'e çevirirken gizleyebilelim
+                deleteBtn.className = 'delete-btn absolute top-0 right-0 bg-red-500 text-white px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition cursor-pointer';
                 deleteBtn.onclick = () => questionDiv.remove();
                 
                 questionDiv.appendChild(img);
                 questionDiv.appendChild(deleteBtn);
                 
-                // Listeye ekle ve alanı göster
                 document.getElementById('questions-list').appendChild(questionDiv);
-                document.getElementById('questions-container').classList.remove('hidden');
             }
+        });
+
+        // A4 KAĞIDINI PDF OLARAK İNDİRME
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const element = document.getElementById('a4-paper');
+            const testName = document.getElementById('input-test-name').value || 'Test_Kagidi';
+            
+            // Çıktı almadan önce silme butonlarını gizle
+            const deleteButtons = document.querySelectorAll('.delete-btn');
+            deleteButtons.forEach(btn => btn.style.display = 'none');
+
+            // html2pdf ayarları
+            const opt = {
+                margin:       0,
+                filename:     testName + '.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // PDF oluştur ve indir
+            html2pdf().set(opt).from(element).save().then(() => {
+                // İşlem bitince silme butonlarını geri getir
+                deleteButtons.forEach(btn => btn.style.display = 'block');
+            });
         });
     </script>
 </body>
