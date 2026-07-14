@@ -9,6 +9,188 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+</head>
+<body class="bg-slate-100 flex flex-col items-center p-8 font-sans">
+    
+    <h1 class="text-3xl font-bold mb-8 text-slate-800">Test Hazırlama Aracı</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-2xl text-center mb-8 border-2 border-dashed border-slate-300">
+        <p class="mb-4 text-slate-600 font-medium">Bir PDF deneme veya soru bankası yükleyin</p>
+        <input type="file" id="pdf-upload" accept="application/pdf" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+    </div>
+
+    <div id="pdf-container" class="hidden flex-col items-center bg-white p-4 rounded-lg shadow-xl w-full max-w-4xl overflow-auto mb-8">
+        
+        <div class="flex items-center justify-between w-full mb-4 px-4">
+            <div class="flex items-center gap-4">
+                <button id="prev-page" class="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition font-medium">Önceki Sayfa</button>
+                <span class="py-2 text-slate-700 font-medium"><span id="page-num">0</span> / <span id="page-count">0</span></span>
+                <button id="next-page" class="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition font-medium">Sonraki Sayfa</button>
+            </div>
+            <button id="crop-btn" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition font-bold shadow">Seçili Alanı Soru Olarak Ekle</button>
+        </div>
+        
+        <div class="relative border border-slate-300 shadow-sm w-full" style="min-height: 500px;">
+            <canvas id="pdf-render" class="hidden"></canvas>
+            <img id="pdf-image" src="" alt="PDF Sayfası" class="max-w-full block" />
+        </div>
+    </div>
+
+    <div id="questions-container" class="hidden w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-12">
+        <h2 class="text-2xl font-bold mb-4 border-b border-slate-200 pb-2 text-slate-800">Seçilen Sorular (Kağıt Taslağı)</h2>
+        <div id="questions-list" class="flex flex-col gap-6">
+            </div>
+    </div>
+
+    <script>
+        let pdfDoc = null,
+            pageNum = 1,
+            pageIsRendering = false,
+            pageNumIsPending = null,
+            cropper = null;
+
+        // PDF Kalitesi (2.0 ile daha net, okunaklı metinler elde ederiz)
+        const scale = 2.0; 
+        const canvas = document.getElementById('pdf-render');
+        const ctx = canvas.getContext('2d');
+        const imgElement = document.getElementById('pdf-image');
+
+        const renderPage = num => {
+            pageIsRendering = true;
+
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderCtx = { canvasContext: ctx, viewport: viewport };
+
+                page.render(renderCtx).promise.then(() => {
+                    pageIsRendering = false;
+                    
+                    // 1. Canvas'taki PDF'i bir resme dönüştür
+                    imgElement.src = canvas.toDataURL('image/png');
+                    
+                    // 2. Eski cropper varsa temizle
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+                    
+                    // 3. Yeni resim üzerinde Cropper.js başlat
+                    cropper = new Cropper(imgElement, {
+                        viewMode: 1, // Kırpma kutusu resmin dışına çıkamaz
+                        autoCropArea: 0.5, // Başlangıçta ekranın %50'si kadar kutu aç
+                        zoomable: false, // Fare topuyla yakınlaştırmayı kapat
+                        movable: false, // Resmi hareket ettirmeyi kapat (sadece kutu hareket etsin)
+                    });
+
+                    if (pageNumIsPending !== null) {
+                        renderPage(pageNumIsPending);
+                        pageNumIsPending = null;
+                    }
+                });
+
+                document.getElementById('page-num').textContent = num;
+            });
+        };
+
+        const queueRenderPage = num => {
+            if (pageIsRendering) {
+                pageNumIsPending = num;
+            } else {
+                renderPage(num);
+            }
+        };
+
+        document.getElementById('prev-page').addEventListener('click', () => {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        });
+
+        document.getElementById('next-page').addEventListener('click', () => {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        });
+
+        document.getElementById('pdf-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file.type !== 'application/pdf') {
+                alert('Lütfen geçerli bir PDF dosyası yükleyin.');
+                return;
+            }
+
+            const fileReader = new FileReader();
+            fileReader.onload = function() {
+                const typedarray = new Uint8Array(this.result);
+                
+                pdfjsLib.getDocument(typedarray).promise.then(pdfDoc_ => {
+                    pdfDoc = pdfDoc_;
+                    document.getElementById('page-count').textContent = pdfDoc.numPages;
+                    document.getElementById('pdf-container').classList.remove('hidden');
+                    document.getElementById('pdf-container').classList.add('flex');
+                    pageNum = 1;
+                    renderPage(pageNum);
+                });
+            };
+            fileReader.readAsArrayBuffer(file);
+        });
+
+        // Kırpma Butonu İşlemi
+        document.getElementById('crop-btn').addEventListener('click', () => {
+            if (!cropper) return;
+            
+            // Seçili alanı yüksek kalitede canvas olarak al (Arka planı beyaz yap)
+            const croppedCanvas = cropper.getCroppedCanvas({
+                fillColor: '#fff', 
+            });
+            
+            if (croppedCanvas) {
+                // Kırpılan resmi veri olarak al
+                const imgData = croppedCanvas.toDataURL('image/png');
+                
+                // Soru kutusunu oluştur
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'relative border border-slate-300 p-4 rounded-lg bg-slate-50 flex flex-col items-center group';
+                
+                // Resmi ekle
+                const img = document.createElement('img');
+                img.src = imgData;
+                img.className = 'max-w-full h-auto';
+                
+                // Silme butonu ekle
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Bu Soruyu Sil';
+                deleteBtn.className = 'absolute top-2 right-2 bg-red-500 text-white px-3 py-1 text-sm rounded opacity-0 group-hover:opacity-100 transition shadow hover:bg-red-600';
+                deleteBtn.onclick = () => questionDiv.remove();
+                
+                questionDiv.appendChild(img);
+                questionDiv.appendChild(deleteBtn);
+                
+                // Listeye ekle ve alanı göster
+                document.getElementById('questions-list').appendChild(questionDiv);
+                document.getElementById('questions-container').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hazırlama Aracı</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
         // PDF.js worker ayarı (Tarayıcıda donmaları engeller)
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
