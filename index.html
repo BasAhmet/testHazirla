@@ -1,1 +1,118 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hazırlama Aracı</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // PDF.js worker ayarı (Tarayıcıda donmaları engeller)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+</head>
+<body class="bg-slate-100 flex flex-col items-center p-8 font-sans">
+    
+    <h1 class="text-3xl font-bold mb-8 text-slate-800">Test Hazırlama Aracı</h1>
 
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-2xl text-center mb-8 border-2 border-dashed border-slate-300">
+        <p class="mb-4 text-slate-600 font-medium">Bir PDF deneme veya soru bankası yükleyin</p>
+        <input type="file" id="pdf-upload" accept="application/pdf" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+    </div>
+
+    <div id="pdf-container" class="hidden flex-col items-center bg-white p-4 rounded-lg shadow-xl max-w-full overflow-auto">
+        <div class="flex items-center gap-4 mb-4">
+            <button id="prev-page" class="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition font-medium">Önceki</button>
+            <span class="py-2 text-slate-700 font-medium">Sayfa: <span id="page-num">0</span> / <span id="page-count">0</span></span>
+            <button id="next-page" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition font-medium">Sonraki</button>
+        </div>
+        
+        <canvas id="pdf-render" class="border border-slate-300 shadow-sm"></canvas>
+    </div>
+
+    <script>
+        let pdfDoc = null,
+            pageNum = 1,
+            pageIsRendering = false,
+            pageNumIsPending = null;
+
+        const scale = 1.5; // PDF kalite ve boyutu
+        const canvas = document.getElementById('pdf-render');
+        const ctx = canvas.getContext('2d');
+
+        // Sayfayı Ekrana Çizme Fonksiyonu
+        const renderPage = num => {
+            pageIsRendering = true;
+
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderCtx = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+
+                page.render(renderCtx).promise.then(() => {
+                    pageIsRendering = false;
+                    if (pageNumIsPending !== null) {
+                        renderPage(pageNumIsPending);
+                        pageNumIsPending = null;
+                    }
+                });
+
+                document.getElementById('page-num').textContent = num;
+            });
+        };
+
+        const queueRenderPage = num => {
+            if (pageIsRendering) {
+                pageNumIsPending = num;
+            } else {
+                renderPage(num);
+            }
+        };
+
+        // Önceki/Sonraki Sayfa Butonları
+        document.getElementById('prev-page').addEventListener('click', () => {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        });
+
+        document.getElementById('next-page').addEventListener('click', () => {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        });
+
+        // Dosya Yüklendiğinde Çalışacak Fonksiyon
+        document.getElementById('pdf-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file.type !== 'application/pdf') {
+                alert('Lütfen geçerli bir PDF dosyası yükleyin.');
+                return;
+            }
+
+            const fileReader = new FileReader();
+            fileReader.onload = function() {
+                const typedarray = new Uint8Array(this.result);
+                
+                pdfjsLib.getDocument(typedarray).promise.then(pdfDoc_ => {
+                    pdfDoc = pdfDoc_;
+                    document.getElementById('page-count').textContent = pdfDoc.numPages;
+                    // Yükleme alanını göster
+                    document.getElementById('pdf-container').classList.remove('hidden');
+                    document.getElementById('pdf-container').classList.add('flex');
+                    pageNum = 1;
+                    renderPage(pageNum);
+                });
+            };
+            fileReader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
