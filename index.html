@@ -20,22 +20,35 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 
     <style>
-        /* A4 Sütun Yapısı ve Araya Çizgi Ekleme */
+        /* A4 Çift Sütun ve Çizgi Yapısı */
         .two-columns {
             column-count: 2;
-            column-gap: 2rem;
-            column-rule: 2px solid #ef4444; /* Sütunlar arası kırmızımtırak/gri çizgi */
+            column-gap: 2.5rem;
+            column-rule: 1px solid #cbd5e1; /* Sütunlar arası dikey çizgi */
             width: 100%;
         }
+
+        /* Tek Sütunluk Standart Soru */
         .question-item {
-            break-inside: avoid; /* Sorunun yarısının diğer sütuna kaymasını engeller */
+            break-inside: avoid;
+            page-break-inside: avoid;
             display: inline-block;
             width: 100%;
             margin-bottom: 1.5rem;
         }
-        /* Geniş LGS Soruları İçin */
-        .span-all {
-            column-span: all;
+
+        /* İki Sütunu da Kaplayan Geniş (LGS) Soru */
+        .question-item.span-all {
+            display: block !important;
+            column-span: all !important;
+            -webkit-column-span: all !important;
+            width: 100% !important;
+        }
+
+        /* Sayfa Sonu Kuralı */
+        .page-break-before {
+            page-break-before: always !important;
+            break-before: page !important;
         }
     </style>
 </head>
@@ -44,7 +57,7 @@
     <aside class="w-80 bg-white border-r border-slate-300 shadow-xl flex flex-col p-4 overflow-y-auto z-10 relative">
         <h2 class="text-xl font-bold text-slate-800 mb-6 border-b pb-2">Sınav Ayarları</h2>
         
-        <div class="flex flex-col gap-4 mb-8">
+        <div class="flex flex-col gap-4 mb-6">
             <input type="text" id="input-test-name" placeholder="Test Adı" class="border border-slate-300 p-2 rounded focus:outline-none focus:border-blue-500" />
             <input type="text" id="input-school-name" placeholder="Okul Adı" class="border border-slate-300 p-2 rounded focus:outline-none focus:border-blue-500" />
             <input type="text" id="input-desc" placeholder="Test ile ilgili açıklama" class="border border-slate-300 p-2 rounded focus:outline-none focus:border-blue-500" />
@@ -57,6 +70,20 @@
                     <option>B Grubu</option>
                 </select>
             </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-4 mb-6 flex flex-col gap-3">
+            <h3 class="font-bold text-slate-700 text-sm">Cevap Anahtarı Ayarları</h3>
+            
+            <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
+                <input type="checkbox" id="chk-ans-key" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                Cevap Anahtarı Ekle
+            </label>
+            
+            <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none ml-2">
+                <input type="checkbox" id="chk-ans-page" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                Ayrı Sayfada Göster
+            </label>
         </div>
 
         <button id="download-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition shadow-lg mt-auto">
@@ -118,7 +145,7 @@
 
             <div id="answer-key-section" class="hidden mt-10 border-t-2 border-black pt-4">
                 <h3 class="text-center font-bold text-lg mb-4">CEVAP ANAHTARI</h3>
-                <div id="answer-key-grid" class="grid grid-cols-5 gap-4 text-sm font-medium"></div>
+                <div id="answer-key-grid" class="grid grid-cols-5 gap-2 text-sm font-medium"></div>
             </div>
         </div>
     </main>
@@ -141,7 +168,7 @@
             animation: 150,
             ghostClass: 'opacity-50',
             cursor: 'move',
-            onEnd: () => updateQuestionNumbers() // Sıralama değiştiğinde numaraları güncelle
+            onEnd: () => updateQuestionNumbers()
         });
 
         // PDF Ayarları
@@ -200,7 +227,7 @@
             fileReader.readAsArrayBuffer(file);
         });
 
-        // Cevap Butonları Seçim Mantığı
+        // Cevap Butonları Seçimi
         let selectedAnswer = "-";
         const ansBtns = document.querySelectorAll('.ans-btn');
         ansBtns.forEach(btn => {
@@ -215,12 +242,12 @@
             });
         });
 
-        // Soru Numaralarını Güncelleyen Fonksiyon
+        // Soru Numaralarını Yeniden Hesapla
         function updateQuestionNumbers() {
             const items = document.querySelectorAll('.question-item');
             items.forEach((item, index) => {
                 const num = index + 1;
-                item.querySelector('.q-num-text').textContent = num + '. Soru';
+                item.querySelector('.q-num-text').textContent = num + '.';
                 item.setAttribute('data-qnum', num);
             });
         }
@@ -233,28 +260,45 @@
             if (croppedCanvas) {
                 const imgData = croppedCanvas.toDataURL('image/png');
                 
-                // LGS Boyut Tespiti: Kesilen alan, PDF genişliğinin %55'inden büyükse tüm satırı kapla
-                const isLarge = croppedCanvas.width > (canvas.width * 0.55);
+                // Otomatik Genişlik Tespiti (Kırpılan genişlik oransal olarak büyükse)
+                const cropData = cropper.getData();
+                const imageData = cropper.getImageData();
+                const isLarge = (cropData.width / imageData.naturalWidth) > 0.55;
                 
                 const questionDiv = document.createElement('div');
-                questionDiv.className = `question-item relative group cursor-move ${isLarge ? 'span-all' : ''}`;
+                questionDiv.className = `question-item group relative cursor-move ${isLarge ? 'span-all' : ''}`;
                 questionDiv.setAttribute('data-ans', selectedAnswer);
                 
-                // Öğretmen Görünümü (Tasarımındaki kırmızı etiketler)
                 questionDiv.innerHTML = `
-                    <div class="teacher-ui flex justify-between items-center bg-red-500 text-white px-3 py-1 rounded-t-md font-bold text-sm">
-                        <span class="q-num-text">Soru</span>
-                        <button class="delete-btn bg-white text-red-500 px-2 py-0.5 rounded text-xs hover:bg-slate-200 transition">Sil</button>
+                    <div class="teacher-ui bg-red-100 border border-red-300 p-1.5 rounded-t flex justify-between items-center mb-1 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-red-700">Cevap: ${selectedAnswer}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button class="toggle-span-btn bg-slate-200 hover:bg-slate-300 text-slate-800 px-2 py-0.5 rounded font-medium transition">
+                                ${isLarge ? 'Genişlik: Tüm Satır' : 'Genişlik: Tek Sütun'}
+                            </button>
+                            <button class="delete-btn bg-red-600 hover:bg-red-700 text-white px-2 py-0.5 rounded font-bold transition">Sil</button>
+                        </div>
                     </div>
-                    <div class="question-body border-2 border-red-500 p-2 bg-white transition-all">
-                        <img src="${imgData}" class="w-full h-auto object-contain pointer-events-none" />
-                    </div>
-                    <div class="teacher-ui bg-red-500 text-white text-sm font-bold inline-block px-3 py-1 rounded-b-md mt-[-2px]">
-                        DOĞRU CEVAP: <span class="q-ans-text">${selectedAnswer}</span>
+
+                    <div class="student-question-content flex items-start gap-2">
+                        <span class="q-num-text font-bold text-slate-900 text-base min-w-[20px] pt-0.5">1.</span>
+                        <div class="flex-1">
+                            <img src="${imgData}" class="w-full h-auto object-contain block" />
+                        </div>
                     </div>
                 `;
                 
-                // Silme işlemi
+                // Genişlik Değiştirme Butonu Mantığı
+                const toggleBtn = questionDiv.querySelector('.toggle-span-btn');
+                toggleBtn.onclick = function() {
+                    questionDiv.classList.toggle('span-all');
+                    const isSpanned = questionDiv.classList.contains('span-all');
+                    toggleBtn.textContent = isSpanned ? 'Genişlik: Tüm Satır' : 'Genişlik: Tek Sütun';
+                };
+
+                // Silme İşlemi
                 questionDiv.querySelector('.delete-btn').onclick = function() {
                     questionDiv.remove();
                     updateQuestionNumbers();
@@ -263,7 +307,7 @@
                 document.getElementById('questions-list').appendChild(questionDiv);
                 updateQuestionNumbers();
                 
-                // Seçimi sıfırla
+                // Cevap seçimini sıfırla
                 ansBtns.forEach(b => {
                     b.classList.remove('bg-blue-600', 'text-white');
                     b.classList.add('bg-slate-100', 'text-black');
@@ -272,45 +316,53 @@
             }
         });
 
-        // Çıktı Alma (Öğretmen panellerini gizleyip PDF üretme)
+        // PDF İNDİRME İŞLEMİ
         document.getElementById('download-btn').addEventListener('click', () => {
             const element = document.getElementById('a4-wrapper');
             const testName = document.getElementById('input-test-name').value || 'Test_Kagidi';
             
-            // 1. Arayüz elemanlarını (kırmızı çerçeveler ve butonlar) gizle
-            document.querySelectorAll('.teacher-ui').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.question-body').forEach(el => {
-                el.classList.remove('border-2', 'border-red-500', 'p-2');
-                el.classList.add('mb-4'); // Sorular arası temiz boşluk
-            });
+            const showAnsKey = document.getElementById('chk-ans-key').checked;
+            const separatePage = document.getElementById('chk-ans-page').checked;
+            const ansSection = document.getElementById('answer-key-section');
 
-            // 2. Cevap Anahtarını Oluştur
-            const answerKeyGrid = document.getElementById('answer-key-grid');
-            answerKeyGrid.innerHTML = '';
-            document.querySelectorAll('.question-item').forEach(item => {
-                const qNum = item.getAttribute('data-qnum');
-                const qAns = item.getAttribute('data-ans');
-                answerKeyGrid.innerHTML += `<div><strong>${qNum}.</strong> ${qAns}</div>`;
-            });
-            document.getElementById('answer-key-section').classList.remove('hidden');
+            // 1. Öğretmen Kontrol Panellerini Gizle
+            const teacherUIs = document.querySelectorAll('.teacher-ui');
+            teacherUIs.forEach(ui => ui.style.display = 'none');
 
-            // 3. PDF'e Çevir
+            // 2. Cevap Anahtarını Hazırla
+            if (showAnsKey) {
+                const answerKeyGrid = document.getElementById('answer-key-grid');
+                answerKeyGrid.innerHTML = '';
+                document.querySelectorAll('.question-item').forEach(item => {
+                    const qNum = item.getAttribute('data-qnum');
+                    const qAns = item.getAttribute('data-ans');
+                    answerKeyGrid.innerHTML += `<div class="p-1 border border-slate-300 rounded text-center"><strong>${qNum})</strong> ${qAns}</div>`;
+                });
+                
+                ansSection.classList.remove('hidden');
+                if (separatePage) {
+                    ansSection.classList.add('page-break-before');
+                } else {
+                    ansSection.classList.remove('page-break-before');
+                }
+            } else {
+                ansSection.classList.add('hidden');
+            }
+
+            // 3. PDF Ayarları (Sayfa Taşmalarına Karşı Korumalı)
             const opt = {
-                margin:       0,
+                margin:       [10, 10, 10, 10], // mm cinsinden kenar boşlukları
                 filename:     testName + '.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['css', 'legacy'] }
             };
 
+            // 4. İndir ve Arayüzü Eski Haline Getir
             html2pdf().set(opt).from(element).save().then(() => {
-                // 4. İşlem bitince arayüzü eski haline getir
-                document.querySelectorAll('.teacher-ui').forEach(el => el.style.display = '');
-                document.querySelectorAll('.question-body').forEach(el => {
-                    el.classList.add('border-2', 'border-red-500', 'p-2');
-                    el.classList.remove('mb-4');
-                });
-                document.getElementById('answer-key-section').classList.add('hidden');
+                teacherUIs.forEach(ui => ui.style.display = '');
+                if (!showAnsKey) ansSection.classList.add('hidden');
             });
         });
     </script>
