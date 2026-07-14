@@ -37,16 +37,15 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
 
-        /* Sayfa İçi Çift Sütun Yapısı ve Belirgin Ortak Çizgi */
+        /* Sayfa İçi Çift Sütun Yapısı (Çizgi kaldırıldı, fiziksel eklendi) */
         .two-columns {
             column-count: 2;
-            column-gap: 2.5rem; /* Sütunlar arası boşluk genişletildi */
-            column-rule: 1.5px solid #475569; /* Ortadaki dikey ayırıcı çizgi (Slate 600) */
+            column-gap: 2.5rem; 
             width: 100%;
-            flex: 1;
+            height: 100%;
         }
 
-        /* Tek Sütunluk Soru ve Alt Ayırıcı Çizgi */
+        /* Tek Sütunluk Soru */
         .question-item {
             break-inside: avoid;
             page-break-inside: avoid;
@@ -54,7 +53,10 @@
             width: 100%;
             margin-bottom: 1.25rem;
             padding-bottom: 1.25rem;
-            border-bottom: 1px dashed #e2e8f0; /* Alt alta gelen soruları ayıran hafif kesikli çizgi */
+            border-bottom: 1px dashed #e2e8f0;
+            background: white; /* Dikey çizginin üstünü örtmesi için beyaz arka plan */
+            position: relative;
+            z-index: 10;
         }
 
         /* İki Sütunu da Kaplayan Geniş (LGS) Soru */
@@ -113,18 +115,19 @@
         
         <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-4xl border border-slate-300">
             <div class="mb-4">
-                <input type="file" id="pdf-upload" accept="application/pdf" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded border cursor-pointer" />
+                <input type="file" id="file-upload" accept="application/pdf, image/png, image/jpeg, image/jpg" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded border cursor-pointer" />
+                <p class="text-xs text-slate-400 mt-1">PDF dosyası veya tekli soru resimleri (JPG, PNG) yükleyebilirsiniz.</p>
             </div>
 
             <div id="pdf-container" class="hidden flex-col items-center w-full">
                 <div class="flex items-center justify-between w-full mb-4 bg-slate-50 p-3 rounded border shadow-sm">
-                    <div class="flex items-center gap-2">
+                    <div id="pagination-controls" class="flex items-center gap-2">
                         <button id="prev-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm">Önceki</button>
                         <span class="text-sm font-medium">Sayfa: <span id="page-num">0</span> / <span id="page-count">0</span></span>
                         <button id="next-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm">Sonraki</button>
                     </div>
                     
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-4 ml-auto">
                         <div class="flex items-center gap-1 bg-white border border-slate-300 p-1 rounded">
                             <span class="text-xs font-bold text-slate-500 mr-1">Cevap:</span>
                             <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition" data-ans="A">A</button>
@@ -138,9 +141,9 @@
                     </div>
                 </div>
                 
-                <div class="relative border border-slate-300 w-full bg-slate-200" style="min-height: 400px;">
+                <div class="relative border border-slate-300 w-full bg-slate-200 flex justify-center items-center overflow-hidden" style="min-height: 400px; max-height: 600px;">
                     <canvas id="pdf-render" class="hidden"></canvas>
-                    <img id="pdf-image" src="" alt="" class="max-w-full block" />
+                    <img id="pdf-image" src="" alt="" class="max-w-full max-h-full block" />
                 </div>
             </div>
         </div>
@@ -166,7 +169,7 @@
 
             // İlk sayfada detaylı başlık, diğerlerinde tek satır başlık
             const headerHTML = newPageNum === 1 ? `
-                <div class="border-b-2 border-black pb-3 mb-4 text-center">
+                <div class="border-b-2 border-black pb-3 mb-4 text-center z-20 bg-white relative">
                     <h1 class="a4-school-name text-lg font-bold uppercase mb-1">${schoolName}</h1>
                     <h2 class="a4-test-name text-xl font-extrabold uppercase mb-2">${testName}</h2>
                     <div class="flex justify-between text-sm font-medium">
@@ -178,16 +181,21 @@
                     </div>
                 </div>
             ` : `
-                <div class="border-b border-slate-400 pb-2 mb-4 flex justify-between items-center text-xs text-slate-600 font-bold uppercase">
+                <div class="border-b border-slate-400 pb-2 mb-4 flex justify-between items-center text-xs text-slate-600 font-bold uppercase z-20 bg-white relative">
                     <span><span class="a4-school-name">${schoolName}</span> - <span class="a4-test-name">${testName}</span></span>
                     <span class="page-header-num">Sayfa ${newPageNum}</span>
                 </div>
             `;
 
+            // Gerçek fiziksel orta çizgi (PDF motorunda kesinlikle çalışır)
             pageDiv.innerHTML = `
                 ${headerHTML}
-                <div class="questions-list two-columns"></div>
-                <div class="page-footer text-center text-xs text-slate-400 border-t border-slate-200 pt-2 mt-auto">
+                <div class="flex-1 relative w-full flex flex-col">
+                    <div class="absolute top-0 bottom-0 left-1/2 w-[1.5px] bg-slate-600 transform -translate-x-1/2 pointer-events-none z-0"></div>
+                    
+                    <div class="questions-list two-columns relative z-10 w-full h-full"></div>
+                </div>
+                <div class="page-footer text-center text-xs text-slate-400 border-t border-slate-200 pt-2 mt-auto z-20 bg-white relative">
                     Sayfa <span class="current-page-num">${newPageNum}</span>
                 </div>
             `;
@@ -228,7 +236,7 @@
             document.getElementById(id).addEventListener('input', bindInputsToAllPages);
         });
 
-        // PDF Altyapısı
+        // PDF & Resim Altyapısı
         let pdfDoc = null, pageNum = 1, pageIsRendering = false, pageNumIsPending = null, cropper = null;
         const canvas = document.getElementById('pdf-render');
         const ctx = canvas.getContext('2d');
@@ -257,20 +265,48 @@
         document.getElementById('prev-page').addEventListener('click', () => { if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum); });
         document.getElementById('next-page').addEventListener('click', () => { if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum); });
 
-        document.getElementById('pdf-upload').addEventListener('change', (e) => {
+        // DOSYA YÜKLEME MANTIĞI (GÜNCELLENDİ)
+        document.getElementById('file-upload').addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file.type !== 'application/pdf') return alert('Geçerli bir PDF yükleyin.');
-            const fileReader = new FileReader();
-            fileReader.onload = function() {
-                pdfjsLib.getDocument(new Uint8Array(this.result)).promise.then(pdfDoc_ => {
-                    pdfDoc = pdfDoc_;
-                    document.getElementById('page-count').textContent = pdfDoc.numPages;
-                    document.getElementById('pdf-container').classList.remove('hidden');
-                    document.getElementById('pdf-container').classList.add('flex');
-                    pageNum = 1; renderPage(pageNum);
-                });
-            };
-            fileReader.readAsArrayBuffer(file);
+            if (!file) return;
+
+            const pdfContainer = document.getElementById('pdf-container');
+            const paginationControls = document.getElementById('pagination-controls');
+
+            pdfContainer.classList.remove('hidden');
+            pdfContainer.classList.add('flex');
+
+            if (file.type === 'application/pdf') {
+                // PDF İŞLEMİ
+                paginationControls.style.display = 'flex'; // Kontrolleri göster
+                const fileReader = new FileReader();
+                fileReader.onload = function() {
+                    pdfjsLib.getDocument(new Uint8Array(this.result)).promise.then(pdfDoc_ => {
+                        pdfDoc = pdfDoc_;
+                        document.getElementById('page-count').textContent = pdfDoc.numPages;
+                        pageNum = 1; renderPage(pageNum);
+                    });
+                };
+                fileReader.readAsArrayBuffer(file);
+
+            } else if (file.type.startsWith('image/')) {
+                // RESİM İŞLEMİ
+                paginationControls.style.display = 'none'; // Resimde sayfa yoktur, gizle
+                const fileReader = new FileReader();
+                fileReader.onload = function(event) {
+                    imgElement.src = event.target.result;
+                    if (cropper) cropper.destroy();
+                    // Resmin yüklenmesi için ufak bir gecikme
+                    setTimeout(() => {
+                        cropper = new Cropper(imgElement, {
+                            viewMode: 1, autoCropArea: 0.5, zoomable: false, movable: false,
+                        });
+                    }, 50);
+                };
+                fileReader.readAsDataURL(file);
+            } else {
+                alert('Lütfen sadece PDF veya Resim (JPG, PNG) formatında bir dosya yükleyin.');
+            }
         });
 
         // Cevap Anahtarı Buton Yönetimi
@@ -357,14 +393,13 @@
             }
         }
 
-        // Soru Ekleme (Cevap Kontrolü Entegre Edildi)
+        // Soru Ekleme
         document.getElementById('crop-btn').addEventListener('click', () => {
             if (!cropper) return;
 
-            // UYARI SİSTEMİ - 1: Soru Ekleme Esnasında Cevap Kontrolü
             if (selectedAnswer === "-") {
                 const confirmAdd = confirm("Bu soru için bir cevap seçmediniz. Soruyu cevap şıkkı belirtmeden (boş) eklemek istiyor musunuz?");
-                if (!confirmAdd) return; // Kullanıcı iptal ederse durdur
+                if (!confirmAdd) return; 
             }
 
             const croppedCanvas = cropper.getCroppedCanvas({ fillColor: '#fff' });
@@ -420,14 +455,13 @@
             }
         });
 
-        // GELİŞTİRİLMİŞ PDF İNDİRME İŞLEMİ (Boş Sayfa Çözümü & Cevap Kontrolü Entegre Edildi)
+        // GELİŞTİRİLMİŞ PDF İNDİRME İŞLEMİ
         document.getElementById('download-btn').addEventListener('click', () => {
             const pagesContainer = document.getElementById('pages-container');
             const testName = document.getElementById('input-test-name').value || 'Test_Kagidi';
             const showAnsKey = document.getElementById('chk-ans-key').checked;
             const separatePage = document.getElementById('chk-ans-page').checked;
 
-            // UYARI SİSTEMİ - 2: PDF İndirilirken Boş Kalan Cevapları Kontrol Etme
             const unmarkedQuestions = [];
             document.querySelectorAll('.question-item').forEach(item => {
                 if (item.getAttribute('data-ans') === "-") {
@@ -437,17 +471,15 @@
 
             if (unmarkedQuestions.length > 0) {
                 const confirmPDF = confirm(`Dikkat! Aşağıdaki soruların cevap anahtarı işaretlenmemiş (boş bırakılmış):\nSoru No: ${unmarkedQuestions.join(', ')}\n\nYine de PDF dosyasını indirmek istiyor musunuz?`);
-                if (!confirmPDF) return; // Kullanıcı iptal ederse PDF oluşturma adımına geçme
+                if (!confirmPDF) return; 
             }
 
-            // 1. Öğretmen menülerini gizle
             document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = 'none');
 
-            // 2. BOŞ SAYFA ÇÖZÜMÜ: Ekrana özel boşlukları sıfırla ki PDF'te taşma yapmasın
             const allPages = document.querySelectorAll('.a4-page');
             allPages.forEach(page => {
-                page.style.marginBottom = '0'; // Sayfalar arası ayırıcı çizgiyi sil
-                page.style.boxShadow = 'none'; // Gölgeleri sil
+                page.style.marginBottom = '0';
+                page.style.boxShadow = 'none';
                 page.style.border = 'none';
             });
 
@@ -467,10 +499,10 @@
                     tempAnsPage.style.marginBottom = '0';
                     tempAnsPage.style.boxShadow = 'none';
                     tempAnsPage.innerHTML = `
-                        <div class="border-b-2 border-black pb-2 mb-6 text-center">
+                        <div class="border-b-2 border-black pb-2 mb-6 text-center z-20 relative bg-white">
                             <h2 class="text-lg font-bold">${testName} - CEVAP ANAHTARI</h2>
                         </div>
-                        <div class="ans-grid grid grid-cols-5 gap-3 text-sm font-semibold p-4"></div>
+                        <div class="ans-grid grid grid-cols-5 gap-3 text-sm font-semibold p-4 relative z-20"></div>
                     `;
                     pagesContainer.appendChild(tempAnsPage);
                     
@@ -482,7 +514,7 @@
                     const pages = document.querySelectorAll('.a4-page');
                     const lastPage = pages[pages.length - 1];
                     const ansDiv = document.createElement('div');
-                    ansDiv.className = 'temp-ans-inline';
+                    ansDiv.className = 'temp-ans-inline z-20 relative bg-white';
                     ansDiv.innerHTML = answerKeyHTML;
                     lastPage.appendChild(ansDiv);
 
@@ -493,7 +525,6 @@
                 }
             }
 
-            // PDF Motor Ayarları
             const opt = {
                 margin:       0,
                 filename:     testName + '.pdf',
@@ -502,12 +533,9 @@
                 jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' }
             };
 
-            // 3. PDF'i indir ve her şeyi eski haline çevir
             html2pdf().set(opt).from(pagesContainer).save().then(() => {
-                // UI Butonlarını geri getir
                 document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = '');
                 
-                // Sayfa boşluklarını ve gölgeleri geri getir
                 allPages.forEach(page => {
                     page.style.marginBottom = '';
                     page.style.boxShadow = '';
