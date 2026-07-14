@@ -20,7 +20,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 
     <style>
-        /* Standart A4 Sayfa Yapısı (96 DPI ekran ortamında) */
+        /* Standart A4 Sayfa Yapısı */
         .a4-page {
             width: 794px;
             height: 1123px;
@@ -64,6 +64,12 @@
             -webkit-column-span: all !important;
             width: 100% !important;
         }
+
+        /* Soruların devasa olmasını engelleyen sınır */
+        .student-question-content img {
+            max-height: 800px;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body class="bg-slate-200 font-sans h-screen flex overflow-hidden">
@@ -88,12 +94,10 @@
 
         <div class="border-t border-slate-200 pt-4 mb-6 flex flex-col gap-3">
             <h3 class="font-bold text-slate-700 text-sm">Cevap Anahtarı Ayarları</h3>
-            
             <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
                 <input type="checkbox" id="chk-ans-key" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
                 Cevap Anahtarı Ekle
             </label>
-            
             <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none ml-2">
                 <input type="checkbox" id="chk-ans-page" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
                 Ayrı Sayfada Göster
@@ -141,28 +145,27 @@
             </div>
         </div>
 
-        <div id="pages-container" class="flex flex-col items-center">
+        <div id="pages-container" class="flex flex-col items-center w-full">
             </div>
 
     </main>
 
     <script>
-        let pageCount = 0;
-
         // YENİ A4 SAYFASI OLUŞTURMA FONKSİYONU
         function createNewPage() {
-            pageCount++;
+            const currentPages = document.querySelectorAll('.a4-page').length;
+            const newPageNum = currentPages + 1;
+
             const pageDiv = document.createElement('div');
             pageDiv.className = 'a4-page';
-            pageDiv.setAttribute('data-page-index', pageCount);
-
+            
             const testName = document.getElementById('input-test-name').value || 'TEST ADI';
             const schoolName = document.getElementById('input-school-name').value || 'OKUL ADI';
             const desc = document.getElementById('input-desc').value || 'Açıklama alanı';
             const className = document.getElementById('input-class').value || '.....';
 
-            // Sayfa 1 için detaylı başlık, Sayfa 2+ için sade başlık
-            const headerHTML = pageCount === 1 ? `
+            // İlk sayfada detaylı başlık, diğerlerinde tek satır başlık
+            const headerHTML = newPageNum === 1 ? `
                 <div class="border-b-2 border-black pb-3 mb-4 text-center">
                     <h1 class="a4-school-name text-lg font-bold uppercase mb-1">${schoolName}</h1>
                     <h2 class="a4-test-name text-xl font-extrabold uppercase mb-2">${testName}</h2>
@@ -176,8 +179,8 @@
                 </div>
             ` : `
                 <div class="border-b border-slate-400 pb-2 mb-4 flex justify-between items-center text-xs text-slate-600 font-bold uppercase">
-                    <span>${schoolName} - ${testName}</span>
-                    <span>Sayfa ${pageCount}</span>
+                    <span><span class="a4-school-name">${schoolName}</span> - <span class="a4-test-name">${testName}</span></span>
+                    <span class="page-header-num">Sayfa ${newPageNum}</span>
                 </div>
             `;
 
@@ -185,22 +188,21 @@
                 ${headerHTML}
                 <div class="questions-list two-columns"></div>
                 <div class="page-footer text-center text-xs text-slate-400 border-t border-slate-200 pt-2 mt-auto">
-                    Sayfa <span class="current-page-num">${pageCount}</span>
+                    Sayfa <span class="current-page-num">${newPageNum}</span>
                 </div>
             `;
 
             document.getElementById('pages-container').appendChild(pageDiv);
 
-            // Yeni oluşturulan sayfa için SortableJS (Sürükle-Bırak) Tanımlama
+            // Sayfalar arası Sürükle-Bırak motoru
             const qList = pageDiv.querySelector('.questions-list');
             new Sortable(qList, {
-                group: 'shared-questions', // Sayfalar arası sürükle bırak sağlayan grup
+                group: 'shared-questions',
                 animation: 150,
                 ghostClass: 'opacity-50',
                 cursor: 'move',
                 onEnd: () => {
                     checkAndFixOverflow();
-                    updateAllQuestionNumbers();
                 }
             });
 
@@ -210,7 +212,7 @@
         // İlk Sayfayı Başlat
         createNewPage();
 
-        // Sol Menü Verilerini Anlık Olarak Tüm Sayfalara Yansıtma
+        // Üst verileri tüm sayfalara yansıt
         const bindInputsToAllPages = () => {
             const testName = document.getElementById('input-test-name').value || 'TEST ADI';
             const schoolName = document.getElementById('input-school-name').value || 'OKUL ADI';
@@ -222,14 +224,12 @@
             document.querySelectorAll('.a4-desc').forEach(el => el.textContent = desc);
             document.querySelectorAll('.a4-class').forEach(el => el.textContent = className);
         };
-
         ['input-test-name', 'input-school-name', 'input-desc', 'input-class'].forEach(id => {
             document.getElementById(id).addEventListener('input', bindInputsToAllPages);
         });
 
-        // PDF Ayarları
+        // PDF Altyapısı
         let pdfDoc = null, pageNum = 1, pageIsRendering = false, pageNumIsPending = null, cropper = null;
-        const scale = 2.0; 
         const canvas = document.getElementById('pdf-render');
         const ctx = canvas.getContext('2d');
         const imgElement = document.getElementById('pdf-image');
@@ -237,7 +237,7 @@
         const renderPage = num => {
             pageIsRendering = true;
             pdfDoc.getPage(num).then(page => {
-                const viewport = page.getViewport({ scale });
+                const viewport = page.getViewport({ scale: 2.0 });
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
                 page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
@@ -253,26 +253,16 @@
             });
         };
 
-        const queueRenderPage = num => {
-            if (pageIsRendering) pageNumIsPending = num;
-            else renderPage(num);
-        };
-
-        document.getElementById('prev-page').addEventListener('click', () => {
-            if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum);
-        });
-
-        document.getElementById('next-page').addEventListener('click', () => {
-            if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum);
-        });
+        const queueRenderPage = num => { if (pageIsRendering) pageNumIsPending = num; else renderPage(num); };
+        document.getElementById('prev-page').addEventListener('click', () => { if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum); });
+        document.getElementById('next-page').addEventListener('click', () => { if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum); });
 
         document.getElementById('pdf-upload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file.type !== 'application/pdf') return alert('Geçerli bir PDF yükleyin.');
             const fileReader = new FileReader();
             fileReader.onload = function() {
-                const typedarray = new Uint8Array(this.result);
-                pdfjsLib.getDocument(typedarray).promise.then(pdfDoc_ => {
+                pdfjsLib.getDocument(new Uint8Array(this.result)).promise.then(pdfDoc_ => {
                     pdfDoc = pdfDoc_;
                     document.getElementById('page-count').textContent = pdfDoc.numPages;
                     document.getElementById('pdf-container').classList.remove('hidden');
@@ -283,78 +273,105 @@
             fileReader.readAsArrayBuffer(file);
         });
 
-        // Cevap Butonları Seçimi
+        // Cevap Anahtarı Buton Yönetimi
         let selectedAnswer = "-";
         const ansBtns = document.querySelectorAll('.ans-btn');
         ansBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                ansBtns.forEach(b => {
-                    b.classList.remove('bg-blue-600', 'text-white');
-                    b.classList.add('bg-slate-100', 'text-black');
-                });
+                ansBtns.forEach(b => { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('bg-slate-100', 'text-black'); });
                 e.target.classList.remove('bg-slate-100', 'text-black');
                 e.target.classList.add('bg-blue-600', 'text-white');
                 selectedAnswer = e.target.getAttribute('data-ans');
             });
         });
 
-        // Soru Numaralarını Tüm Sayfalarda Sırayla Güncelleme
+        // Tüm Numaraları Güncelle
         function updateAllQuestionNumbers() {
-            const allQuestions = document.querySelectorAll('.question-item');
-            allQuestions.forEach((item, index) => {
+            document.querySelectorAll('.question-item').forEach((item, index) => {
                 const qNum = index + 1;
                 item.querySelector('.q-num-text').textContent = qNum + '.';
                 item.setAttribute('data-qnum', qNum);
             });
         }
 
-        // Sayfa Taşma Kontrolü ve Otomatik Sayfa Aktarımı
-        function checkAndFixOverflow() {
-            const pages = document.querySelectorAll('.a4-page');
-            pages.forEach((page, index) => {
-                // Eğer sayfa A4 sınırını (1123px) aşıyorsa
-                while (page.scrollHeight > 1123) {
-                    const qList = page.querySelector('.questions-list');
-                    if (qList.children.length <= 1) break; // Tek soru devasa ise sayfada kalsın
-                    
-                    const lastQuestion = qList.lastElementChild;
-                    let nextPage = pages[index + 1];
-                    
-                    if (!nextPage) {
-                        nextPage = createNewPage();
-                    }
-                    
-                    const nextQList = nextPage.querySelector('.questions-list');
-                    nextQList.insertBefore(lastQuestion, nextQList.firstChild);
-                }
+        // Sayfa Numaralarını Güncelle (Silinmelere Karşı)
+        function updatePageNumbersAndHeaders() {
+            document.querySelectorAll('.a4-page').forEach((page, index) => {
+                const pageNum = index + 1;
+                const footerNum = page.querySelector('.current-page-num');
+                if (footerNum) footerNum.textContent = pageNum;
+                const headerNum = page.querySelector('.page-header-num');
+                if (headerNum) headerNum.textContent = `Sayfa ${pageNum}`;
             });
-
-            // Boş kalan fazla sayfaları temizleme (İlk sayfa hariç)
-            const updatedPages = document.querySelectorAll('.a4-page');
-            for (let i = updatedPages.length - 1; i > 0; i--) {
-                const p = updatedPages[i];
-                if (p.querySelector('.questions-list').children.length === 0) {
-                    p.remove();
-                    pageCount--;
-                } else {
-                    break;
-                }
-            }
-            updateAllQuestionNumbers();
         }
 
-        // Soru Ekleme Mantığı
+        // DİNAMİK TAŞMA KONTROLÜ (GELİŞTİRİLMİŞ ÇEKIRDEK MANTIK)
+        function checkAndFixOverflow() {
+            const pages = Array.from(document.querySelectorAll('.a4-page'));
+            let hasMoved = false;
+
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                const qList = page.querySelector('.questions-list');
+                
+                // Sayfada en fazla 1 soru varsa taşmayı kontrol etme (sonsuz döngüyü keser)
+                if (qList.children.length <= 1) continue;
+
+                const pageRect = page.getBoundingClientRect();
+                // 40px alt ve sağ boşlukları çıkarıp 5px tolerans payı bırakıyoruz
+                const maxBottom = pageRect.bottom - 35; 
+                const maxRight = pageRect.right - 35;
+
+                let isOverflowing = true;
+                
+                while (isOverflowing && qList.children.length > 1) {
+                    const lastQuestion = qList.lastElementChild;
+                    const qRect = lastQuestion.getBoundingClientRect();
+                    
+                    // Soru dikeyde veya sütun yapısından dolayı yatayda (3. sütun) dışarı taştıysa
+                    if (qRect.bottom > maxBottom || qRect.right > maxRight || qList.scrollWidth > qList.clientWidth + 5) {
+                        let nextPage = pages[i + 1];
+                        if (!nextPage) {
+                            nextPage = createNewPage();
+                            pages.push(nextPage); // Döngüye yeni sayfayı dahil et
+                        }
+                        
+                        const nextQList = nextPage.querySelector('.questions-list');
+                        nextQList.insertBefore(lastQuestion, nextQList.firstChild);
+                        hasMoved = true;
+                    } else {
+                        isOverflowing = false;
+                    }
+                }
+            }
+
+            // Tamamen boşalan sayfaları temizle (1. sayfa hariç)
+            const updatedPages = document.querySelectorAll('.a4-page');
+            for (let i = updatedPages.length - 1; i > 0; i--) {
+                if (updatedPages[i].querySelector('.questions-list').children.length === 0) {
+                    updatedPages[i].remove();
+                }
+            }
+
+            // Zincirleme bir kayma olduysa sistemi tekrar tetikle
+            if (hasMoved) {
+                checkAndFixOverflow();
+            } else {
+                updatePageNumbersAndHeaders();
+                updateAllQuestionNumbers();
+            }
+        }
+
+        // Soru Ekleme
         document.getElementById('crop-btn').addEventListener('click', () => {
             if (!cropper) return;
             const croppedCanvas = cropper.getCroppedCanvas({ fillColor: '#fff' });
             
             if (croppedCanvas) {
                 const imgData = croppedCanvas.toDataURL('image/png');
-                
-                // Genişlik Tespiti
                 const cropData = cropper.getData();
                 const imageData = cropper.getImageData();
-                const isLarge = (cropData.width / imageData.naturalWidth) > 0.55;
+                const isLarge = (cropData.width / imageData.naturalWidth) > 0.55; // LGS formatı
                 
                 const questionDiv = document.createElement('div');
                 questionDiv.className = `question-item group relative cursor-move ${isLarge ? 'span-all' : ''}`;
@@ -372,43 +389,31 @@
                             <button class="delete-btn bg-red-600 hover:bg-red-700 text-white px-2 py-0.5 rounded font-bold transition">Sil</button>
                         </div>
                     </div>
-
                     <div class="student-question-content flex items-start gap-2">
                         <span class="q-num-text font-bold text-slate-900 text-base min-w-[20px] pt-0.5">1.</span>
                         <div class="flex-1">
-                            <img src="${imgData}" class="w-full h-auto object-contain block" />
+                            <img src="${imgData}" class="w-full object-contain block" />
                         </div>
                     </div>
                 `;
                 
-                // Genişlik Değiştirme Butonu
-                const toggleBtn = questionDiv.querySelector('.toggle-span-btn');
-                toggleBtn.onclick = function() {
+                questionDiv.querySelector('.toggle-span-btn').onclick = function() {
                     questionDiv.classList.toggle('span-all');
-                    const isSpanned = questionDiv.classList.contains('span-all');
-                    toggleBtn.textContent = isSpanned ? 'Genişlik: Tüm Satır' : 'Genişlik: Tek Sütun';
+                    this.textContent = questionDiv.classList.contains('span-all') ? 'Genişlik: Tüm Satır' : 'Genişlik: Tek Sütun';
                     checkAndFixOverflow();
                 };
 
-                // Silme İşlemi
                 questionDiv.querySelector('.delete-btn').onclick = function() {
                     questionDiv.remove();
                     checkAndFixOverflow();
                 };
                 
-                // Soruyu en son sayfaya ekle
                 const pages = document.querySelectorAll('.a4-page');
-                const lastPage = pages[pages.length - 1];
-                lastPage.querySelector('.questions-list').appendChild(questionDiv);
+                pages[pages.length - 1].querySelector('.questions-list').appendChild(questionDiv);
                 
-                // Taşma kontrolü yap ve numaraları güncelle
                 checkAndFixOverflow();
                 
-                // Cevap seçimini sıfırla
-                ansBtns.forEach(b => {
-                    b.classList.remove('bg-blue-600', 'text-white');
-                    b.classList.add('bg-slate-100', 'text-black');
-                });
+                ansBtns.forEach(b => { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('bg-slate-100', 'text-black'); });
                 selectedAnswer = "-";
             }
         });
@@ -420,13 +425,10 @@
             const showAnsKey = document.getElementById('chk-ans-key').checked;
             const separatePage = document.getElementById('chk-ans-page').checked;
 
-            // 1. Öğretmen Kontrol Panellerini Gizle
-            const teacherUIs = document.querySelectorAll('.teacher-ui');
-            teacherUIs.forEach(ui => ui.style.display = 'none');
+            document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = 'none');
 
             let tempAnsPage = null;
 
-            // 2. Cevap Anahtarını Oluştur ve Yerleştir
             if (showAnsKey) {
                 const answerKeyHTML = `
                     <div class="answer-key-box mt-6 border-t-2 border-black pt-4">
@@ -436,7 +438,6 @@
                 `;
 
                 if (separatePage) {
-                    // Ayrı sayfada göster seçeneği işaretliyse yeni bir A4 oluştur
                     tempAnsPage = document.createElement('div');
                     tempAnsPage.className = 'a4-page';
                     tempAnsPage.innerHTML = `
@@ -452,7 +453,6 @@
                         grid.innerHTML += `<div class="p-2 border border-slate-300 rounded text-center bg-slate-50"><strong>${item.getAttribute('data-qnum')})</strong> ${item.getAttribute('data-ans')}</div>`;
                     });
                 } else {
-                    // En son sayfanın altına ekle
                     const pages = document.querySelectorAll('.a4-page');
                     const lastPage = pages[pages.length - 1];
                     const ansDiv = document.createElement('div');
@@ -467,7 +467,6 @@
                 }
             }
 
-            // 3. PDF Oluşturma Ayarları
             const opt = {
                 margin:       0,
                 filename:     testName + '.pdf',
@@ -476,12 +475,8 @@
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // 4. PDF İndir ve Arayüzü Temizle
             html2pdf().set(opt).from(pagesContainer).save().then(() => {
-                // Öğretmen panellerini geri aç
-                teacherUIs.forEach(ui => ui.style.display = '');
-                
-                // Geçici cevap anahtarlarını kaldır
+                document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = '');
                 if (tempAnsPage) tempAnsPage.remove();
                 document.querySelectorAll('.temp-ans-inline').forEach(el => el.remove());
             });
