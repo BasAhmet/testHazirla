@@ -16,6 +16,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 </head>
 <body class="bg-slate-200 font-sans h-screen flex overflow-hidden">
 
@@ -79,14 +81,14 @@
                 </div>
             </div>
             
-            <div id="questions-list" class="flex flex-col gap-8 flex-1">
+            <div id="questions-list" class="grid grid-cols-2 gap-x-8 gap-y-6 flex-1 content-start">
                 </div>
         </div>
 
     </main>
 
     <script>
-        // SOL MENÜ VERİLERİNİ A4 KAĞIDINA ANLIK AKTARMA
+        // SOL MENÜ VERİLERİNİ A4 KAĞIDINA AKTARMA
         const bindInput = (inputId, targetId, defaultText) => {
             document.getElementById(inputId).addEventListener('input', (e) => {
                 document.getElementById(targetId).textContent = e.target.value || defaultText;
@@ -96,6 +98,14 @@
         bindInput('input-school-name', 'a4-school-name', 'OKUL ADI');
         bindInput('input-desc', 'a4-desc', 'Açıklama alanı');
         bindInput('input-class', 'a4-class', '.....');
+
+        // SÜRÜKLE BIRAK (SortableJS) KURULUMU
+        const questionsList = document.getElementById('questions-list');
+        new Sortable(questionsList, {
+            animation: 150,
+            ghostClass: 'opacity-50', // Sürüklenen elemanın arka plandaki şeffaflığı
+            cursor: 'move'
+        });
 
         // PDF VE KESME MANTIĞI
         let pdfDoc = null, pageNum = 1, pageIsRendering = false, pageNumIsPending = null, cropper = null;
@@ -161,16 +171,16 @@
                 const imgData = croppedCanvas.toDataURL('image/png');
                 
                 const questionDiv = document.createElement('div');
-                questionDiv.className = 'relative group w-full';
+                // Sürükleme imleci (cursor-move) eklendi
+                questionDiv.className = 'relative group w-full cursor-move border border-transparent hover:border-blue-300 rounded p-1 transition-colors';
                 
                 const img = document.createElement('img');
                 img.src = imgData;
-                img.className = 'w-full h-auto object-contain'; // Soruyu kağıda sığdır
+                img.className = 'w-full h-auto object-contain'; 
                 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = 'Sil';
-                // Silme butonuna "delete-btn" sınıfını ekliyoruz ki PDF'e çevirirken gizleyebilelim
-                deleteBtn.className = 'delete-btn absolute top-0 right-0 bg-red-500 text-white px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition cursor-pointer';
+                deleteBtn.className = 'delete-btn absolute top-1 right-1 bg-red-500 text-white px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition cursor-pointer z-10';
                 deleteBtn.onclick = () => questionDiv.remove();
                 
                 questionDiv.appendChild(img);
@@ -185,11 +195,13 @@
             const element = document.getElementById('a4-paper');
             const testName = document.getElementById('input-test-name').value || 'Test_Kagidi';
             
-            // Çıktı almadan önce silme butonlarını gizle
+            // Çıktı almadan önce silme butonlarını gizle ve sürükleme çerçevelerini temizle
             const deleteButtons = document.querySelectorAll('.delete-btn');
+            const questionDivs = document.querySelectorAll('#questions-list > div');
+            
             deleteButtons.forEach(btn => btn.style.display = 'none');
+            questionDivs.forEach(div => div.classList.remove('hover:border-blue-300', 'border'));
 
-            // html2pdf ayarları
             const opt = {
                 margin:       0,
                 filename:     testName + '.pdf',
@@ -198,10 +210,10 @@
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // PDF oluştur ve indir
             html2pdf().set(opt).from(element).save().then(() => {
-                // İşlem bitince silme butonlarını geri getir
+                // İşlem bitince butonları ve stilleri geri getir
                 deleteButtons.forEach(btn => btn.style.display = 'block');
+                questionDivs.forEach(div => div.classList.add('hover:border-blue-300', 'border'));
             });
         });
     </script>
