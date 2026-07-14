@@ -33,8 +33,6 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            page-break-after: always;
-            break-after: page;
             overflow: hidden;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
@@ -305,7 +303,7 @@
             });
         }
 
-        // DİNAMİK TAŞMA KONTROLÜ (GELİŞTİRİLMİŞ ÇEKIRDEK MANTIK)
+        // DİNAMİK TAŞMA KONTROLÜ
         function checkAndFixOverflow() {
             const pages = Array.from(document.querySelectorAll('.a4-page'));
             let hasMoved = false;
@@ -314,11 +312,9 @@
                 const page = pages[i];
                 const qList = page.querySelector('.questions-list');
                 
-                // Sayfada en fazla 1 soru varsa taşmayı kontrol etme (sonsuz döngüyü keser)
                 if (qList.children.length <= 1) continue;
 
                 const pageRect = page.getBoundingClientRect();
-                // 40px alt ve sağ boşlukları çıkarıp 5px tolerans payı bırakıyoruz
                 const maxBottom = pageRect.bottom - 35; 
                 const maxRight = pageRect.right - 35;
 
@@ -328,12 +324,11 @@
                     const lastQuestion = qList.lastElementChild;
                     const qRect = lastQuestion.getBoundingClientRect();
                     
-                    // Soru dikeyde veya sütun yapısından dolayı yatayda (3. sütun) dışarı taştıysa
                     if (qRect.bottom > maxBottom || qRect.right > maxRight || qList.scrollWidth > qList.clientWidth + 5) {
                         let nextPage = pages[i + 1];
                         if (!nextPage) {
                             nextPage = createNewPage();
-                            pages.push(nextPage); // Döngüye yeni sayfayı dahil et
+                            pages.push(nextPage); 
                         }
                         
                         const nextQList = nextPage.querySelector('.questions-list');
@@ -345,7 +340,6 @@
                 }
             }
 
-            // Tamamen boşalan sayfaları temizle (1. sayfa hariç)
             const updatedPages = document.querySelectorAll('.a4-page');
             for (let i = updatedPages.length - 1; i > 0; i--) {
                 if (updatedPages[i].querySelector('.questions-list').children.length === 0) {
@@ -353,7 +347,6 @@
                 }
             }
 
-            // Zincirleme bir kayma olduysa sistemi tekrar tetikle
             if (hasMoved) {
                 checkAndFixOverflow();
             } else {
@@ -371,7 +364,7 @@
                 const imgData = croppedCanvas.toDataURL('image/png');
                 const cropData = cropper.getData();
                 const imageData = cropper.getImageData();
-                const isLarge = (cropData.width / imageData.naturalWidth) > 0.55; // LGS formatı
+                const isLarge = (cropData.width / imageData.naturalWidth) > 0.55;
                 
                 const questionDiv = document.createElement('div');
                 questionDiv.className = `question-item group relative cursor-move ${isLarge ? 'span-all' : ''}`;
@@ -418,14 +411,23 @@
             }
         });
 
-        // PDF İNDİRME İŞLEMİ
+        // GELİŞTİRİLMİŞ PDF İNDİRME İŞLEMİ (Boş Sayfa Sorunu Çözüldü)
         document.getElementById('download-btn').addEventListener('click', () => {
             const pagesContainer = document.getElementById('pages-container');
             const testName = document.getElementById('input-test-name').value || 'Test_Kagidi';
             const showAnsKey = document.getElementById('chk-ans-key').checked;
             const separatePage = document.getElementById('chk-ans-page').checked;
 
+            // 1. Öğretmen menülerini gizle
             document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = 'none');
+
+            // 2. BOŞ SAYFA ÇÖZÜMÜ: Ekrana özel boşlukları sıfırla ki PDF'te taşma yapmasın
+            const allPages = document.querySelectorAll('.a4-page');
+            allPages.forEach(page => {
+                page.style.marginBottom = '0'; // Sayfalar arası ayırıcı çizgiyi sil
+                page.style.boxShadow = 'none'; // Gölgeleri sil
+                page.style.border = 'none';
+            });
 
             let tempAnsPage = null;
 
@@ -440,6 +442,9 @@
                 if (separatePage) {
                     tempAnsPage = document.createElement('div');
                     tempAnsPage.className = 'a4-page';
+                    // Yeni eklenen cevap sayfasına da sıfır boşluk kuralını uyguluyoruz
+                    tempAnsPage.style.marginBottom = '0';
+                    tempAnsPage.style.boxShadow = 'none';
                     tempAnsPage.innerHTML = `
                         <div class="border-b-2 border-black pb-2 mb-6 text-center">
                             <h2 class="text-lg font-bold">${testName} - CEVAP ANAHTARI</h2>
@@ -467,16 +472,27 @@
                 }
             }
 
+            // PDF Motor Ayarları: 'px' birimini kullanarak doğrudan 794x1123 piksel kuralını uygulatıyoruz
             const opt = {
                 margin:       0,
                 filename:     testName + '.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' }
             };
 
+            // 3. PDF'i indir ve her şeyi eski haline çevir
             html2pdf().set(opt).from(pagesContainer).save().then(() => {
+                // UI Butonlarını geri getir
                 document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = '');
+                
+                // Sayfa boşluklarını ve gölgeleri geri getir
+                allPages.forEach(page => {
+                    page.style.marginBottom = '';
+                    page.style.boxShadow = '';
+                    page.style.border = '';
+                });
+
                 if (tempAnsPage) tempAnsPage.remove();
                 document.querySelectorAll('.temp-ans-inline').forEach(el => el.remove());
             });
