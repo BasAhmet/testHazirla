@@ -5,23 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Hazırlama Aracı</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
 
-    <!-- Cropper.js -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
-    <!-- HTML to PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <!-- SortableJS (Sürükle Bırak) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 
     <style>
@@ -80,7 +75,6 @@
 </head>
 <body class="bg-slate-200 font-sans h-screen flex overflow-hidden">
 
-    <!-- SOL MENÜ (Kontrol Paneli) -->
     <aside class="w-80 bg-white border-r border-slate-300 shadow-xl flex flex-col p-4 overflow-y-auto z-10 relative">
         <h2 class="text-xl font-bold text-slate-800 mb-6 border-b pb-2">Sınav Ayarları</h2>
         
@@ -100,15 +94,12 @@
         </div>
 
         <div class="border-t border-slate-200 pt-4 mb-6 flex flex-col gap-3">
-            <h3 class="font-bold text-slate-700 text-sm">Cevap Anahtarı Ayarları</h3>
-            <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
-                <input type="checkbox" id="chk-ans-key" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                Cevap Anahtarı Ekle
-            </label>
-            <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none ml-2">
-                <input type="checkbox" id="chk-ans-page" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                Ayrı Sayfada Göster
-            </label>
+            <h3 class="font-bold text-slate-700 text-sm">Cevap Anahtarı Konumu</h3>
+            <select id="select-ans-pos" class="border border-slate-300 p-2 rounded focus:outline-none focus:border-blue-500 text-sm text-slate-700">
+                <option value="none">Cevap Anahtarı Ekleme</option>
+                <option value="page-bottom" selected>Her Sayfanın Altında (Sütunlu)</option>
+                <option value="end-test">Testin Sonunda (Toplu)</option>
+            </select>
         </div>
 
         <button id="download-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition shadow-lg mt-auto">
@@ -116,10 +107,8 @@
         </button>
     </aside>
 
-    <!-- SAĞ ALAN -->
     <main class="flex-1 overflow-y-auto p-8 flex flex-col items-center gap-8">
         
-        <!-- Yükleme ve Kırpma Alanı -->
         <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-4xl border border-slate-300">
             <div class="mb-4">
                 <input type="file" id="file-upload" accept="application/pdf, image/png, image/jpeg, image/jpg" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded border cursor-pointer" />
@@ -155,7 +144,6 @@
             </div>
         </div>
 
-        <!-- GERÇEK ÇOKLU A4 SAYFA KONTEYNERİ -->
         <div id="pages-container" class="flex flex-col items-center w-full"></div>
 
     </main>
@@ -401,7 +389,6 @@
                     <div class="teacher-ui bg-red-100 border border-red-300 p-1.5 rounded-t flex justify-between items-center mb-1 text-xs">
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-red-700">Cevap: ${selectedAnswer}</span>
-                            <!-- Çözüm Boşluğu Kontrol Butonları -->
                             <div class="flex items-center bg-white rounded border border-red-200 ml-2 shadow-sm">
                                 <button class="space-decrease px-2 py-0.5 hover:bg-slate-100 font-bold text-red-600 border-r border-red-100" title="Boşluğu Azalt">-</button>
                                 <span class="px-2 text-[10px] font-bold text-slate-600">Boşluk</span>
@@ -422,17 +409,15 @@
                                 <img src="${imgData}" class="w-full object-contain block" />
                             </div>
                         </div>
-                        <!-- Dinamik Çözüm Alanı Divi -->
                         <div class="solution-space w-full rounded" style="height: 0px;"></div>
                     </div>
                 `;
                 
-                // Boşluk Yönetimi JS
                 const solutionSpace = questionDiv.querySelector('.solution-space');
                 let currentSpace = 0;
 
                 questionDiv.querySelector('.space-increase').onclick = function() {
-                    currentSpace += 60; // Her tıklamada yaklaşık 3 satır boşluk ekle
+                    currentSpace += 60;
                     solutionSpace.style.height = currentSpace + 'px';
                     if(currentSpace > 0) {
                         solutionSpace.classList.add('has-space', 'border', 'border-dashed', 'border-blue-300', 'bg-blue-50', 'mt-2', 'flex', 'items-center', 'justify-center');
@@ -477,8 +462,7 @@
         document.getElementById('download-btn').addEventListener('click', () => {
             const pagesContainer = document.getElementById('pages-container');
             const testName = document.getElementById('input-test-name').value || 'Test_Kagidi';
-            const showAnsKey = document.getElementById('chk-ans-key').checked;
-            const separatePage = document.getElementById('chk-ans-page').checked;
+            const ansPos = document.getElementById('select-ans-pos').value;
 
             const unmarkedQuestions = [];
             document.querySelectorAll('.question-item').forEach(item => {
@@ -507,46 +491,68 @@
                 page.style.border = 'none';
             });
 
-            let tempAnsPage = null;
+            if (ansPos === 'page-bottom') {
+                allPages.forEach(page => {
+                    const questions = page.querySelectorAll('.question-item');
+                    if (questions.length === 0) return;
 
-            if (showAnsKey) {
+                    const pageRect = page.getBoundingClientRect();
+                    const pageCenter = pageRect.left + (pageRect.width / 2);
+
+                    let leftAns = [];
+                    let rightAns = [];
+
+                    questions.forEach(q => {
+                        const qNum = q.getAttribute('data-qnum');
+                        const ans = q.getAttribute('data-ans');
+                        const qRect = q.getBoundingClientRect();
+
+                        // Soru ekranın sol yarısında mı? (Span-all olanlar sola yazılır)
+                        if (q.classList.contains('span-all') || qRect.left < (pageCenter - 10)) {
+                            leftAns.push(`<span class="mr-4"><strong>${qNum}.</strong> ${ans}</span>`);
+                        } else {
+                            rightAns.push(`<span class="mr-4"><strong>${qNum}.</strong> ${ans}</span>`);
+                        }
+                    });
+
+                    // Alt bilgi DOM elemanını oluştur
+                    const ansFooter = document.createElement('div');
+                    ansFooter.className = 'temp-ans-inline flex justify-between items-center border-t-2 border-slate-400 pt-2 pb-1 mt-auto text-xs z-20 bg-white w-full';
+                    
+                    const leftDiv = document.createElement('div');
+                    leftDiv.className = 'flex flex-wrap flex-1';
+                    leftDiv.innerHTML = leftAns.join('');
+
+                    const rightDiv = document.createElement('div');
+                    rightDiv.className = 'flex flex-wrap flex-1 justify-start pl-6 border-l border-slate-300';
+                    rightDiv.innerHTML = rightAns.join('');
+
+                    ansFooter.appendChild(leftDiv);
+                    ansFooter.appendChild(rightDiv);
+
+                    // Sayfa numarasının (page-footer) hemen üstüne ekle
+                    const pageFooter = page.querySelector('.page-footer');
+                    page.insertBefore(ansFooter, pageFooter);
+                });
+            } else if (ansPos === 'end-test') {
+                const pages = document.querySelectorAll('.a4-page');
+                const lastPage = pages[pages.length - 1];
+                
                 const answerKeyHTML = `
                     <div class="answer-key-box mt-6 border-t-2 border-black pt-4">
                         <h3 class="text-center font-bold text-base mb-3">CEVAP ANAHTARI</h3>
                         <div class="ans-grid grid grid-cols-5 gap-2 text-xs font-semibold"></div>
                     </div>
                 `;
+                const ansDiv = document.createElement('div');
+                ansDiv.className = 'temp-ans-inline z-20 relative bg-white';
+                ansDiv.innerHTML = answerKeyHTML;
+                lastPage.appendChild(ansDiv);
 
-                if (separatePage) {
-                    tempAnsPage = document.createElement('div');
-                    tempAnsPage.className = 'a4-page';
-                    tempAnsPage.style.marginBottom = '0';
-                    tempAnsPage.style.boxShadow = 'none';
-                    tempAnsPage.innerHTML = `
-                        <div class="border-b-2 border-black pb-2 mb-6 text-center z-20 relative bg-white">
-                            <h2 class="text-lg font-bold">${testName} - CEVAP ANAHTARI</h2>
-                        </div>
-                        <div class="ans-grid grid grid-cols-5 gap-3 text-sm font-semibold p-4 relative z-20"></div>
-                    `;
-                    pagesContainer.appendChild(tempAnsPage);
-                    
-                    const grid = tempAnsPage.querySelector('.ans-grid');
-                    document.querySelectorAll('.question-item').forEach(item => {
-                        grid.innerHTML += `<div class="p-2 border border-slate-300 rounded text-center bg-slate-50"><strong>${item.getAttribute('data-qnum')})</strong> ${item.getAttribute('data-ans')}</div>`;
-                    });
-                } else {
-                    const pages = document.querySelectorAll('.a4-page');
-                    const lastPage = pages[pages.length - 1];
-                    const ansDiv = document.createElement('div');
-                    ansDiv.className = 'temp-ans-inline z-20 relative bg-white';
-                    ansDiv.innerHTML = answerKeyHTML;
-                    lastPage.appendChild(ansDiv);
-
-                    const grid = ansDiv.querySelector('.ans-grid');
-                    document.querySelectorAll('.question-item').forEach(item => {
-                        grid.innerHTML += `<div class="p-1 border border-slate-300 rounded text-center"><strong>${item.getAttribute('data-qnum')})</strong> ${item.getAttribute('data-ans')}</div>`;
-                    });
-                }
+                const grid = ansDiv.querySelector('.ans-grid');
+                document.querySelectorAll('.question-item').forEach(item => {
+                    grid.innerHTML += `<div class="p-1 border border-slate-300 rounded text-center"><strong>${item.getAttribute('data-qnum')})</strong> ${item.getAttribute('data-ans')}</div>`;
+                });
             }
 
             const opt = {
@@ -572,7 +578,6 @@
                     page.style.border = '';
                 });
 
-                if (tempAnsPage) tempAnsPage.remove();
                 document.querySelectorAll('.temp-ans-inline').forEach(el => el.remove());
             });
         });
