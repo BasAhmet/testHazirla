@@ -5,18 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Hazırlama Aracı</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
 
+    <!-- Cropper.js -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
+    <!-- HTML to PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+    <!-- SortableJS (Sürükle Bırak) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 
     <style>
@@ -37,7 +42,7 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
 
-        /* Sayfa İçi Çift Sütun Yapısı (Çizgi kaldırıldı, fiziksel eklendi) */
+        /* Sayfa İçi Çift Sütun Yapısı */
         .two-columns {
             column-count: 2;
             column-gap: 2.5rem; 
@@ -54,12 +59,12 @@
             margin-bottom: 1.25rem;
             padding-bottom: 1.25rem;
             border-bottom: 1px dashed #e2e8f0;
-            background: white; /* Dikey çizginin üstünü örtmesi için beyaz arka plan */
+            background: white;
             position: relative;
             z-index: 10;
         }
 
-        /* İki Sütunu da Kaplayan Geniş (LGS) Soru */
+        /* İki Sütunu da Kaplayan Geniş Soru */
         .question-item.span-all {
             display: block !important;
             column-span: all !important;
@@ -67,7 +72,6 @@
             width: 100% !important;
         }
 
-        /* Soruların devasa olmasını engelleyen sınır */
         .student-question-content img {
             max-height: 800px;
             object-fit: contain;
@@ -76,6 +80,7 @@
 </head>
 <body class="bg-slate-200 font-sans h-screen flex overflow-hidden">
 
+    <!-- SOL MENÜ (Kontrol Paneli) -->
     <aside class="w-80 bg-white border-r border-slate-300 shadow-xl flex flex-col p-4 overflow-y-auto z-10 relative">
         <h2 class="text-xl font-bold text-slate-800 mb-6 border-b pb-2">Sınav Ayarları</h2>
         
@@ -111,8 +116,10 @@
         </button>
     </aside>
 
+    <!-- SAĞ ALAN -->
     <main class="flex-1 overflow-y-auto p-8 flex flex-col items-center gap-8">
         
+        <!-- Yükleme ve Kırpma Alanı -->
         <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-4xl border border-slate-300">
             <div class="mb-4">
                 <input type="file" id="file-upload" accept="application/pdf, image/png, image/jpeg, image/jpg" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded border cursor-pointer" />
@@ -148,13 +155,12 @@
             </div>
         </div>
 
-        <div id="pages-container" class="flex flex-col items-center w-full">
-            </div>
+        <!-- GERÇEK ÇOKLU A4 SAYFA KONTEYNERİ -->
+        <div id="pages-container" class="flex flex-col items-center w-full"></div>
 
     </main>
 
     <script>
-        // YENİ A4 SAYFASI OLUŞTURMA FONKSİYONU
         function createNewPage() {
             const currentPages = document.querySelectorAll('.a4-page').length;
             const newPageNum = currentPages + 1;
@@ -167,7 +173,6 @@
             const desc = document.getElementById('input-desc').value || 'Açıklama alanı';
             const className = document.getElementById('input-class').value || '.....';
 
-            // İlk sayfada detaylı başlık, diğerlerinde tek satır başlık
             const headerHTML = newPageNum === 1 ? `
                 <div class="border-b-2 border-black pb-3 mb-4 text-center z-20 bg-white relative">
                     <h1 class="a4-school-name text-lg font-bold uppercase mb-1">${schoolName}</h1>
@@ -187,12 +192,10 @@
                 </div>
             `;
 
-            // Gerçek fiziksel orta çizgi (PDF motorunda kesinlikle çalışır)
             pageDiv.innerHTML = `
                 ${headerHTML}
                 <div class="flex-1 relative w-full flex flex-col">
                     <div class="absolute top-0 bottom-0 left-1/2 w-[1.5px] bg-slate-600 transform -translate-x-1/2 pointer-events-none z-0"></div>
-                    
                     <div class="questions-list two-columns relative z-10 w-full h-full"></div>
                 </div>
                 <div class="page-footer text-center text-xs text-slate-400 border-t border-slate-200 pt-2 mt-auto z-20 bg-white relative">
@@ -202,25 +205,20 @@
 
             document.getElementById('pages-container').appendChild(pageDiv);
 
-            // Sayfalar arası Sürükle-Bırak motoru
             const qList = pageDiv.querySelector('.questions-list');
             new Sortable(qList, {
                 group: 'shared-questions',
                 animation: 150,
                 ghostClass: 'opacity-50',
                 cursor: 'move',
-                onEnd: () => {
-                    checkAndFixOverflow();
-                }
+                onEnd: () => { checkAndFixOverflow(); }
             });
 
             return pageDiv;
         }
 
-        // İlk Sayfayı Başlat
         createNewPage();
 
-        // Üst verileri tüm sayfalara yansıt
         const bindInputsToAllPages = () => {
             const testName = document.getElementById('input-test-name').value || 'TEST ADI';
             const schoolName = document.getElementById('input-school-name').value || 'OKUL ADI';
@@ -236,7 +234,6 @@
             document.getElementById(id).addEventListener('input', bindInputsToAllPages);
         });
 
-        // PDF & Resim Altyapısı
         let pdfDoc = null, pageNum = 1, pageIsRendering = false, pageNumIsPending = null, cropper = null;
         const canvas = document.getElementById('pdf-render');
         const ctx = canvas.getContext('2d');
@@ -252,9 +249,7 @@
                     pageIsRendering = false;
                     imgElement.src = canvas.toDataURL('image/png');
                     if (cropper) cropper.destroy();
-                    cropper = new Cropper(imgElement, {
-                        viewMode: 1, autoCropArea: 0.5, zoomable: false, movable: false,
-                    });
+                    cropper = new Cropper(imgElement, { viewMode: 1, autoCropArea: 0.5, zoomable: false, movable: false });
                     if (pageNumIsPending !== null) { renderPage(pageNumIsPending); pageNumIsPending = null; }
                 });
                 document.getElementById('page-num').textContent = num;
@@ -265,7 +260,6 @@
         document.getElementById('prev-page').addEventListener('click', () => { if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum); });
         document.getElementById('next-page').addEventListener('click', () => { if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum); });
 
-        // DOSYA YÜKLEME MANTIĞI (GÜNCELLENDİ)
         document.getElementById('file-upload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -277,8 +271,7 @@
             pdfContainer.classList.add('flex');
 
             if (file.type === 'application/pdf') {
-                // PDF İŞLEMİ
-                paginationControls.style.display = 'flex'; // Kontrolleri göster
+                paginationControls.style.display = 'flex';
                 const fileReader = new FileReader();
                 fileReader.onload = function() {
                     pdfjsLib.getDocument(new Uint8Array(this.result)).promise.then(pdfDoc_ => {
@@ -288,19 +281,14 @@
                     });
                 };
                 fileReader.readAsArrayBuffer(file);
-
             } else if (file.type.startsWith('image/')) {
-                // RESİM İŞLEMİ
-                paginationControls.style.display = 'none'; // Resimde sayfa yoktur, gizle
+                paginationControls.style.display = 'none';
                 const fileReader = new FileReader();
                 fileReader.onload = function(event) {
                     imgElement.src = event.target.result;
                     if (cropper) cropper.destroy();
-                    // Resmin yüklenmesi için ufak bir gecikme
                     setTimeout(() => {
-                        cropper = new Cropper(imgElement, {
-                            viewMode: 1, autoCropArea: 0.5, zoomable: false, movable: false,
-                        });
+                        cropper = new Cropper(imgElement, { viewMode: 1, autoCropArea: 0.5, zoomable: false, movable: false });
                     }, 50);
                 };
                 fileReader.readAsDataURL(file);
@@ -309,7 +297,6 @@
             }
         });
 
-        // Cevap Anahtarı Buton Yönetimi
         let selectedAnswer = "-";
         const ansBtns = document.querySelectorAll('.ans-btn');
         ansBtns.forEach(btn => {
@@ -321,7 +308,6 @@
             });
         });
 
-        // Tüm Numaraları Güncelle
         function updateAllQuestionNumbers() {
             document.querySelectorAll('.question-item').forEach((item, index) => {
                 const qNum = index + 1;
@@ -330,7 +316,6 @@
             });
         }
 
-        // Sayfa Numaralarını Güncelle (Silinmelere Karşı)
         function updatePageNumbersAndHeaders() {
             document.querySelectorAll('.a4-page').forEach((page, index) => {
                 const pageNum = index + 1;
@@ -341,7 +326,6 @@
             });
         }
 
-        // DİNAMİK TAŞMA KONTROLÜ
         function checkAndFixOverflow() {
             const pages = Array.from(document.querySelectorAll('.a4-page'));
             let hasMoved = false;
@@ -393,7 +377,6 @@
             }
         }
 
-        // Soru Ekleme
         document.getElementById('crop-btn').addEventListener('click', () => {
             if (!cropper) return;
 
@@ -418,6 +401,12 @@
                     <div class="teacher-ui bg-red-100 border border-red-300 p-1.5 rounded-t flex justify-between items-center mb-1 text-xs">
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-red-700">Cevap: ${selectedAnswer}</span>
+                            <!-- Çözüm Boşluğu Kontrol Butonları -->
+                            <div class="flex items-center bg-white rounded border border-red-200 ml-2 shadow-sm">
+                                <button class="space-decrease px-2 py-0.5 hover:bg-slate-100 font-bold text-red-600 border-r border-red-100" title="Boşluğu Azalt">-</button>
+                                <span class="px-2 text-[10px] font-bold text-slate-600">Boşluk</span>
+                                <button class="space-increase px-2 py-0.5 hover:bg-slate-100 font-bold text-green-600 border-l border-red-100" title="Boşluğu Artır">+</button>
+                            </div>
                         </div>
                         <div class="flex items-center gap-1">
                             <button class="toggle-span-btn bg-slate-200 hover:bg-slate-300 text-slate-800 px-2 py-0.5 rounded font-medium transition">
@@ -426,14 +415,44 @@
                             <button class="delete-btn bg-red-600 hover:bg-red-700 text-white px-2 py-0.5 rounded font-bold transition">Sil</button>
                         </div>
                     </div>
-                    <div class="student-question-content flex items-start gap-2">
-                        <span class="q-num-text font-bold text-slate-900 text-base min-w-[20px] pt-0.5">1.</span>
-                        <div class="flex-1">
-                            <img src="${imgData}" class="w-full object-contain block" />
+                    <div class="student-question-content flex items-start gap-2 flex-col w-full">
+                        <div class="flex items-start gap-2 w-full">
+                            <span class="q-num-text font-bold text-slate-900 text-base min-w-[20px] pt-0.5">1.</span>
+                            <div class="flex-1 w-full">
+                                <img src="${imgData}" class="w-full object-contain block" />
+                            </div>
                         </div>
+                        <!-- Dinamik Çözüm Alanı Divi -->
+                        <div class="solution-space w-full rounded" style="height: 0px;"></div>
                     </div>
                 `;
                 
+                // Boşluk Yönetimi JS
+                const solutionSpace = questionDiv.querySelector('.solution-space');
+                let currentSpace = 0;
+
+                questionDiv.querySelector('.space-increase').onclick = function() {
+                    currentSpace += 60; // Her tıklamada yaklaşık 3 satır boşluk ekle
+                    solutionSpace.style.height = currentSpace + 'px';
+                    if(currentSpace > 0) {
+                        solutionSpace.classList.add('has-space', 'border', 'border-dashed', 'border-blue-300', 'bg-blue-50', 'mt-2', 'flex', 'items-center', 'justify-center');
+                        solutionSpace.innerHTML = '<span class="text-blue-400 text-xs font-medium solution-text">Çözüm Alanı</span>';
+                    }
+                    checkAndFixOverflow();
+                };
+
+                questionDiv.querySelector('.space-decrease').onclick = function() {
+                    if(currentSpace >= 60) {
+                        currentSpace -= 60;
+                        solutionSpace.style.height = currentSpace + 'px';
+                        if(currentSpace === 0) {
+                            solutionSpace.classList.remove('has-space', 'border', 'border-dashed', 'border-blue-300', 'bg-blue-50', 'mt-2', 'flex', 'items-center', 'justify-center');
+                            solutionSpace.innerHTML = '';
+                        }
+                        checkAndFixOverflow();
+                    }
+                };
+
                 questionDiv.querySelector('.toggle-span-btn').onclick = function() {
                     questionDiv.classList.toggle('span-all');
                     this.textContent = questionDiv.classList.contains('span-all') ? 'Genişlik: Tüm Satır' : 'Genişlik: Tek Sütun';
@@ -455,7 +474,6 @@
             }
         });
 
-        // GELİŞTİRİLMİŞ PDF İNDİRME İŞLEMİ
         document.getElementById('download-btn').addEventListener('click', () => {
             const pagesContainer = document.getElementById('pages-container');
             const testName = document.getElementById('input-test-name').value || 'Test_Kagidi';
@@ -474,7 +492,13 @@
                 if (!confirmPDF) return; 
             }
 
+            // PDF öncesi ui elementlerini ve boşluklardaki grafikleri temizle
             document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = 'none');
+            document.querySelectorAll('.solution-space').forEach(space => {
+                space.classList.remove('border', 'border-dashed', 'border-blue-300', 'bg-blue-50');
+                const textEl = space.querySelector('.solution-text');
+                if(textEl) textEl.style.display = 'none';
+            });
 
             const allPages = document.querySelectorAll('.a4-page');
             allPages.forEach(page => {
@@ -534,8 +558,14 @@
             };
 
             html2pdf().set(opt).from(pagesContainer).save().then(() => {
+                // PDF işlemi bittikten sonra görünümü eski haline getir
                 document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = '');
-                
+                document.querySelectorAll('.solution-space.has-space').forEach(space => {
+                    space.classList.add('border', 'border-dashed', 'border-blue-300', 'bg-blue-50');
+                    const textEl = space.querySelector('.solution-text');
+                    if(textEl) textEl.style.display = 'block';
+                });
+
                 allPages.forEach(page => {
                     page.style.marginBottom = '';
                     page.style.boxShadow = '';
