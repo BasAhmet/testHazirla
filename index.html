@@ -18,6 +18,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+
+    <style>
+        /* A4 Sütun Yapısı ve Araya Çizgi Ekleme */
+        .two-columns {
+            column-count: 2;
+            column-gap: 2rem;
+            column-rule: 2px solid #ef4444; /* Sütunlar arası kırmızımtırak/gri çizgi */
+            width: 100%;
+        }
+        .question-item {
+            break-inside: avoid; /* Sorunun yarısının diğer sütuna kaymasını engeller */
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+        /* Geniş LGS Soruları İçin */
+        .span-all {
+            column-span: all;
+        }
+    </style>
 </head>
 <body class="bg-slate-200 font-sans h-screen flex overflow-hidden">
 
@@ -48,17 +68,29 @@
         
         <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-4xl border border-slate-300">
             <div class="mb-4">
-                <input type="file" id="pdf-upload" accept="application/pdf" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                <input type="file" id="pdf-upload" accept="application/pdf" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded border cursor-pointer" />
             </div>
 
             <div id="pdf-container" class="hidden flex-col items-center w-full">
-                <div class="flex items-center justify-between w-full mb-4 bg-slate-50 p-2 rounded border">
+                <div class="flex items-center justify-between w-full mb-4 bg-slate-50 p-3 rounded border shadow-sm">
                     <div class="flex items-center gap-2">
                         <button id="prev-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm">Önceki</button>
                         <span class="text-sm font-medium">Sayfa: <span id="page-num">0</span> / <span id="page-count">0</span></span>
                         <button id="next-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm">Sonraki</button>
                     </div>
-                    <button id="crop-btn" class="px-4 py-1.5 bg-green-600 text-white text-sm font-bold rounded hover:bg-green-700 transition">Seçili Alanı Ekle</button>
+                    
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-1 bg-white border border-slate-300 p-1 rounded">
+                            <span class="text-xs font-bold text-slate-500 mr-1">Cevap:</span>
+                            <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition" data-ans="A">A</button>
+                            <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition" data-ans="B">B</button>
+                            <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition" data-ans="C">C</button>
+                            <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition" data-ans="D">D</button>
+                            <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition" data-ans="E">E</button>
+                            <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition border-l ml-1" data-ans="-">-</button>
+                        </div>
+                        <button id="crop-btn" class="px-6 py-2 bg-green-600 text-white text-sm font-bold rounded hover:bg-green-700 transition shadow">Soruyu Ekle</button>
+                    </div>
                 </div>
                 
                 <div class="relative border border-slate-300 w-full bg-slate-200" style="min-height: 400px;">
@@ -68,7 +100,7 @@
             </div>
         </div>
 
-        <div id="a4-paper" class="bg-white shadow-2xl relative w-[794px] min-h-[1123px] p-10 flex flex-col">
+        <div id="a4-wrapper" class="bg-white shadow-2xl relative w-[794px] min-h-[1123px] p-10 flex flex-col">
             <div class="border-b-2 border-black pb-4 mb-6 text-center">
                 <h1 id="a4-school-name" class="text-lg font-bold uppercase mb-1">OKUL ADI</h1>
                 <h2 id="a4-test-name" class="text-xl font-extrabold uppercase mb-2">TEST ADI</h2>
@@ -81,14 +113,18 @@
                 </div>
             </div>
             
-            <div id="questions-list" class="grid grid-cols-2 gap-x-8 gap-y-6 flex-1 content-start">
+            <div id="questions-list" class="two-columns flex-1">
                 </div>
-        </div>
 
+            <div id="answer-key-section" class="hidden mt-10 border-t-2 border-black pt-4">
+                <h3 class="text-center font-bold text-lg mb-4">CEVAP ANAHTARI</h3>
+                <div id="answer-key-grid" class="grid grid-cols-5 gap-4 text-sm font-medium"></div>
+            </div>
+        </div>
     </main>
 
     <script>
-        // SOL MENÜ VERİLERİNİ A4 KAĞIDINA AKTARMA
+        // Sol Menü Bağlantıları
         const bindInput = (inputId, targetId, defaultText) => {
             document.getElementById(inputId).addEventListener('input', (e) => {
                 document.getElementById(targetId).textContent = e.target.value || defaultText;
@@ -99,15 +135,16 @@
         bindInput('input-desc', 'a4-desc', 'Açıklama alanı');
         bindInput('input-class', 'a4-class', '.....');
 
-        // SÜRÜKLE BIRAK (SortableJS) KURULUMU
+        // Sürükle Bırak Kurulumu
         const questionsList = document.getElementById('questions-list');
         new Sortable(questionsList, {
             animation: 150,
-            ghostClass: 'opacity-50', // Sürüklenen elemanın arka plandaki şeffaflığı
-            cursor: 'move'
+            ghostClass: 'opacity-50',
+            cursor: 'move',
+            onEnd: () => updateQuestionNumbers() // Sıralama değiştiğinde numaraları güncelle
         });
 
-        // PDF VE KESME MANTIĞI
+        // PDF Ayarları
         let pdfDoc = null, pageNum = 1, pageIsRendering = false, pageNumIsPending = null, cropper = null;
         const scale = 2.0; 
         const canvas = document.getElementById('pdf-render');
@@ -163,45 +200,101 @@
             fileReader.readAsArrayBuffer(file);
         });
 
-        // KESİLEN SORUYU A4'E EKLEME
+        // Cevap Butonları Seçim Mantığı
+        let selectedAnswer = "-";
+        const ansBtns = document.querySelectorAll('.ans-btn');
+        ansBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                ansBtns.forEach(b => {
+                    b.classList.remove('bg-blue-600', 'text-white');
+                    b.classList.add('bg-slate-100', 'text-black');
+                });
+                e.target.classList.remove('bg-slate-100', 'text-black');
+                e.target.classList.add('bg-blue-600', 'text-white');
+                selectedAnswer = e.target.getAttribute('data-ans');
+            });
+        });
+
+        // Soru Numaralarını Güncelleyen Fonksiyon
+        function updateQuestionNumbers() {
+            const items = document.querySelectorAll('.question-item');
+            items.forEach((item, index) => {
+                const num = index + 1;
+                item.querySelector('.q-num-text').textContent = num + '. Soru';
+                item.setAttribute('data-qnum', num);
+            });
+        }
+
+        // Soru Ekleme
         document.getElementById('crop-btn').addEventListener('click', () => {
             if (!cropper) return;
             const croppedCanvas = cropper.getCroppedCanvas({ fillColor: '#fff' });
+            
             if (croppedCanvas) {
                 const imgData = croppedCanvas.toDataURL('image/png');
                 
+                // LGS Boyut Tespiti: Kesilen alan, PDF genişliğinin %55'inden büyükse tüm satırı kapla
+                const isLarge = croppedCanvas.width > (canvas.width * 0.55);
+                
                 const questionDiv = document.createElement('div');
-                // Sürükleme imleci (cursor-move) eklendi
-                questionDiv.className = 'relative group w-full cursor-move border border-transparent hover:border-blue-300 rounded p-1 transition-colors';
+                questionDiv.className = `question-item relative group cursor-move ${isLarge ? 'span-all' : ''}`;
+                questionDiv.setAttribute('data-ans', selectedAnswer);
                 
-                const img = document.createElement('img');
-                img.src = imgData;
-                img.className = 'w-full h-auto object-contain'; 
+                // Öğretmen Görünümü (Tasarımındaki kırmızı etiketler)
+                questionDiv.innerHTML = `
+                    <div class="teacher-ui flex justify-between items-center bg-red-500 text-white px-3 py-1 rounded-t-md font-bold text-sm">
+                        <span class="q-num-text">Soru</span>
+                        <button class="delete-btn bg-white text-red-500 px-2 py-0.5 rounded text-xs hover:bg-slate-200 transition">Sil</button>
+                    </div>
+                    <div class="question-body border-2 border-red-500 p-2 bg-white transition-all">
+                        <img src="${imgData}" class="w-full h-auto object-contain pointer-events-none" />
+                    </div>
+                    <div class="teacher-ui bg-red-500 text-white text-sm font-bold inline-block px-3 py-1 rounded-b-md mt-[-2px]">
+                        DOĞRU CEVAP: <span class="q-ans-text">${selectedAnswer}</span>
+                    </div>
+                `;
                 
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Sil';
-                deleteBtn.className = 'delete-btn absolute top-1 right-1 bg-red-500 text-white px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition cursor-pointer z-10';
-                deleteBtn.onclick = () => questionDiv.remove();
-                
-                questionDiv.appendChild(img);
-                questionDiv.appendChild(deleteBtn);
+                // Silme işlemi
+                questionDiv.querySelector('.delete-btn').onclick = function() {
+                    questionDiv.remove();
+                    updateQuestionNumbers();
+                };
                 
                 document.getElementById('questions-list').appendChild(questionDiv);
+                updateQuestionNumbers();
+                
+                // Seçimi sıfırla
+                ansBtns.forEach(b => {
+                    b.classList.remove('bg-blue-600', 'text-white');
+                    b.classList.add('bg-slate-100', 'text-black');
+                });
+                selectedAnswer = "-";
             }
         });
 
-        // A4 KAĞIDINI PDF OLARAK İNDİRME
+        // Çıktı Alma (Öğretmen panellerini gizleyip PDF üretme)
         document.getElementById('download-btn').addEventListener('click', () => {
-            const element = document.getElementById('a4-paper');
+            const element = document.getElementById('a4-wrapper');
             const testName = document.getElementById('input-test-name').value || 'Test_Kagidi';
             
-            // Çıktı almadan önce silme butonlarını gizle ve sürükleme çerçevelerini temizle
-            const deleteButtons = document.querySelectorAll('.delete-btn');
-            const questionDivs = document.querySelectorAll('#questions-list > div');
-            
-            deleteButtons.forEach(btn => btn.style.display = 'none');
-            questionDivs.forEach(div => div.classList.remove('hover:border-blue-300', 'border'));
+            // 1. Arayüz elemanlarını (kırmızı çerçeveler ve butonlar) gizle
+            document.querySelectorAll('.teacher-ui').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.question-body').forEach(el => {
+                el.classList.remove('border-2', 'border-red-500', 'p-2');
+                el.classList.add('mb-4'); // Sorular arası temiz boşluk
+            });
 
+            // 2. Cevap Anahtarını Oluştur
+            const answerKeyGrid = document.getElementById('answer-key-grid');
+            answerKeyGrid.innerHTML = '';
+            document.querySelectorAll('.question-item').forEach(item => {
+                const qNum = item.getAttribute('data-qnum');
+                const qAns = item.getAttribute('data-ans');
+                answerKeyGrid.innerHTML += `<div><strong>${qNum}.</strong> ${qAns}</div>`;
+            });
+            document.getElementById('answer-key-section').classList.remove('hidden');
+
+            // 3. PDF'e Çevir
             const opt = {
                 margin:       0,
                 filename:     testName + '.pdf',
@@ -211,9 +304,13 @@
             };
 
             html2pdf().set(opt).from(element).save().then(() => {
-                // İşlem bitince butonları ve stilleri geri getir
-                deleteButtons.forEach(btn => btn.style.display = 'block');
-                questionDivs.forEach(div => div.classList.add('hover:border-blue-300', 'border'));
+                // 4. İşlem bitince arayüzü eski haline getir
+                document.querySelectorAll('.teacher-ui').forEach(el => el.style.display = '');
+                document.querySelectorAll('.question-body').forEach(el => {
+                    el.classList.add('border-2', 'border-red-500', 'p-2');
+                    el.classList.remove('mb-4');
+                });
+                document.getElementById('answer-key-section').classList.add('hidden');
             });
         });
     </script>
