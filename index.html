@@ -37,22 +37,24 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
 
-        /* Sayfa İçi Çift Sütun Yapısı */
+        /* Sayfa İçi Çift Sütun Yapısı ve Belirgin Ortak Çizgi */
         .two-columns {
             column-count: 2;
-            column-gap: 2rem;
-            column-rule: 1px solid #cbd5e1;
+            column-gap: 2.5rem; /* Sütunlar arası boşluk genişletildi */
+            column-rule: 1.5px solid #475569; /* Ortadaki dikey ayırıcı çizgi (Slate 600) */
             width: 100%;
             flex: 1;
         }
 
-        /* Tek Sütunluk Soru */
+        /* Tek Sütunluk Soru ve Alt Ayırıcı Çizgi */
         .question-item {
             break-inside: avoid;
             page-break-inside: avoid;
             display: inline-block;
             width: 100%;
             margin-bottom: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px dashed #e2e8f0; /* Alt alta gelen soruları ayıran hafif kesikli çizgi */
         }
 
         /* İki Sütunu da Kaplayan Geniş (LGS) Soru */
@@ -355,9 +357,16 @@
             }
         }
 
-        // Soru Ekleme
+        // Soru Ekleme (Cevap Kontrolü Entegre Edildi)
         document.getElementById('crop-btn').addEventListener('click', () => {
             if (!cropper) return;
+
+            // UYARI SİSTEMİ - 1: Soru Ekleme Esnasında Cevap Kontrolü
+            if (selectedAnswer === "-") {
+                const confirmAdd = confirm("Bu soru için bir cevap seçmediniz. Soruyu cevap şıkkı belirtmeden (boş) eklemek istiyor musunuz?");
+                if (!confirmAdd) return; // Kullanıcı iptal ederse durdur
+            }
+
             const croppedCanvas = cropper.getCroppedCanvas({ fillColor: '#fff' });
             
             if (croppedCanvas) {
@@ -411,12 +420,25 @@
             }
         });
 
-        // GELİŞTİRİLMİŞ PDF İNDİRME İŞLEMİ (Boş Sayfa Sorunu Çözüldü)
+        // GELİŞTİRİLMİŞ PDF İNDİRME İŞLEMİ (Boş Sayfa Çözümü & Cevap Kontrolü Entegre Edildi)
         document.getElementById('download-btn').addEventListener('click', () => {
             const pagesContainer = document.getElementById('pages-container');
             const testName = document.getElementById('input-test-name').value || 'Test_Kagidi';
             const showAnsKey = document.getElementById('chk-ans-key').checked;
             const separatePage = document.getElementById('chk-ans-page').checked;
+
+            // UYARI SİSTEMİ - 2: PDF İndirilirken Boş Kalan Cevapları Kontrol Etme
+            const unmarkedQuestions = [];
+            document.querySelectorAll('.question-item').forEach(item => {
+                if (item.getAttribute('data-ans') === "-") {
+                    unmarkedQuestions.push(item.getAttribute('data-qnum'));
+                }
+            });
+
+            if (unmarkedQuestions.length > 0) {
+                const confirmPDF = confirm(`Dikkat! Aşağıdaki soruların cevap anahtarı işaretlenmemiş (boş bırakılmış):\nSoru No: ${unmarkedQuestions.join(', ')}\n\nYine de PDF dosyasını indirmek istiyor musunuz?`);
+                if (!confirmPDF) return; // Kullanıcı iptal ederse PDF oluşturma adımına geçme
+            }
 
             // 1. Öğretmen menülerini gizle
             document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = 'none');
@@ -442,7 +464,6 @@
                 if (separatePage) {
                     tempAnsPage = document.createElement('div');
                     tempAnsPage.className = 'a4-page';
-                    // Yeni eklenen cevap sayfasına da sıfır boşluk kuralını uyguluyoruz
                     tempAnsPage.style.marginBottom = '0';
                     tempAnsPage.style.boxShadow = 'none';
                     tempAnsPage.innerHTML = `
@@ -472,7 +493,7 @@
                 }
             }
 
-            // PDF Motor Ayarları: 'px' birimini kullanarak doğrudan 794x1123 piksel kuralını uygulatıyoruz
+            // PDF Motor Ayarları
             const opt = {
                 margin:       0,
                 filename:     testName + '.pdf',
