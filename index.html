@@ -471,16 +471,9 @@
                 if(textEl) textEl.style.display = 'none';
             });
 
-            const allPages = document.querySelectorAll('.a4-page');
-            allPages.forEach(page => {
-                page.style.marginBottom = '0';
-                page.style.boxShadow = 'none';
-                page.style.border = 'none';
-            });
-
             // 1. Durum: Her Sayfanın Altında (Sütunlu)
             if (ansPos === 'page-bottom') {
-                allPages.forEach(page => {
+                document.querySelectorAll('.a4-page').forEach(page => {
                     const questions = page.querySelectorAll('.question-item');
                     if (questions.length === 0) return;
 
@@ -494,7 +487,6 @@
                         const qRect = q.getBoundingClientRect();
                         const relativeLeft = qRect.left - containerRect.left;
 
-                        // Sol sütun mu yoksa sağ sütun mu tespiti (offsetLeft yerine dinamik bounding box)
                         if (q.classList.contains('span-all') || relativeLeft < (containerRect.width / 2 - 10)) {
                             leftAns.push(`<span class="mr-4"><strong>${qNum}.</strong> ${ans}</span>`);
                         } else {
@@ -521,17 +513,18 @@
                     tempElements.push(ansFooter);
                 });
 
-            // 2. Durum: Ayrı Sayfada (Sonda)
+            // 2. Durum: Ayrı Sayfada (Sonda - Kutu Izgara Tasarımı)
             } else if (ansPos === 'end-page') {
                 const newPage = document.createElement('div');
-                newPage.className = 'a4-page p-10 flex flex-col items-center justify-start';
+                newPage.className = 'a4-page bg-white relative flex flex-col items-center pt-16'; 
                 
-                // Cevap anahtarı için temiz, şık yeni bir A4 sayfa tasarımı
                 newPage.innerHTML = `
-                    <div class="w-full text-center border-b-2 border-black pb-4 mb-8 mt-6">
-                        <h2 class="text-2xl font-extrabold uppercase tracking-wider text-slate-800">CEVAP ANAHTARI</h2>
+                    <div class="w-full max-w-3xl text-center border-b-2 border-slate-800 pb-4 mb-10">
+                        <h2 class="text-2xl font-extrabold uppercase tracking-widest text-slate-800">CEVAP ANAHTARI</h2>
                     </div>
-                    <div class="w-full max-w-2xl grid grid-cols-5 gap-4 ans-grid"></div>
+                    <div class="w-full max-w-3xl flex justify-center">
+                        <div class="grid grid-cols-5 gap-x-12 gap-y-6 ans-grid"></div>
+                    </div>
                 `;
                 
                 const grid = newPage.querySelector('.ans-grid');
@@ -539,9 +532,9 @@
                     const qNum = item.getAttribute('data-qnum');
                     const ans = item.getAttribute('data-ans');
                     grid.innerHTML += `
-                        <div class="flex items-center justify-between p-3 border border-slate-300 rounded-lg bg-slate-50 shadow-sm">
-                            <span class="text-sm font-bold text-slate-700">${qNum}.</span>
-                            <span class="text-base font-extrabold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">${ans}</span>
+                        <div class="flex items-center justify-center gap-3">
+                            <span class="text-xl font-bold text-slate-500 w-8 text-right">${qNum}.</span>
+                            <span class="text-xl font-extrabold text-slate-800 border-2 border-slate-300 rounded px-3 py-1 bg-slate-50 w-12 text-center shadow-sm">${ans}</span>
                         </div>
                     `;
                 });
@@ -549,6 +542,14 @@
                 pagesContainer.appendChild(newPage);
                 tempElements.push(newPage);
             }
+
+            // MÜHİM DÜZELTME: PDF oluşturmadan hemen önce tüm sayfaların dış boşluklarını ve gölgelerini kapat. (Boş sayfa engelleme)
+            const allPages = document.querySelectorAll('.a4-page');
+            allPages.forEach(page => {
+                page.style.marginBottom = '0';
+                page.style.boxShadow = 'none';
+                page.style.border = 'none';
+            });
 
             const opt = {
                 margin:       0,
@@ -559,9 +560,10 @@
             };
 
             html2pdf().set(opt).from(pagesContainer).save().then(() => {
-                // PDF işlemi bittikten sonra geçici elementleri sil ve görünümü eski haline getir
+                // PDF işlemi bittikten sonra geçici elementleri sil
                 tempElements.forEach(el => el.remove());
 
+                // UI elementlerini geri getir
                 document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = '');
                 document.querySelectorAll('.solution-space.has-space').forEach(space => {
                     space.classList.add('border', 'border-dashed', 'border-blue-300', 'bg-blue-50');
@@ -569,6 +571,7 @@
                     if(textEl) textEl.style.display = 'block';
                 });
 
+                // Orijinal sayfa marginlerini geri ver ki ekranda tekrar ayrı ayrı sayfalar gibi görünsünler
                 allPages.forEach(page => {
                     page.style.marginBottom = '';
                     page.style.boxShadow = '';
