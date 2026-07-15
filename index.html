@@ -63,6 +63,12 @@
             max-height: 800px; 
             object-fit: contain; 
         }
+
+        /* Koyu Gri Alan ve Kırpma Alanı İçin Özel Belirgin İmleç (Siyah-Beyaz Artı) */
+        .custom-cursor-area, 
+        .cropper-drag-box.cropper-crop {
+            cursor: url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M11%200h2v24h-2zM0%2011h24v2h-24z%22%20fill%3D%22black%22%2F%3E%3Cpath%20d%3D%22M11.5%201v22M1%2011.5h22%22%20stroke%3D%22white%22%20stroke-width%3D%221%22%2F%3E%3C%2Fsvg%3E') 12 12, crosshair !important;
+        }
     </style>
 </head>
 <body class="bg-slate-200 font-sans h-screen flex overflow-hidden">
@@ -133,7 +139,7 @@
                     </div>
                 </div>
 
-                <div class="relative border border-slate-400 w-full bg-slate-800 flex justify-center items-center overflow-hidden rounded shadow-inner h-[75vh]">
+                <div class="relative border border-slate-400 w-full bg-slate-800 custom-cursor-area flex justify-center items-center overflow-hidden rounded shadow-inner h-[75vh]">
                     <canvas id="pdf-render" class="hidden"></canvas>
                     <img id="pdf-image" src="" alt="" class="max-w-full max-h-full block" />
                 </div>
@@ -221,23 +227,22 @@
         const ctx = canvas.getContext('2d');
         const imgElement = document.getElementById('pdf-image');
 
-        // CROPPER AYARLARI GÜNCELLENDİ (zoomable: true, movable: true eklendi)
         const initCropper = () => {
             if (cropper) cropper.destroy();
             cropper = new Cropper(imgElement, { 
                 viewMode: 1, 
                 autoCropArea: 0.5, 
-                zoomable: true,   // Fare tekerleği ile yakınlaştırma açık
-                movable: true,    // Sayfayı kaydırma açık
-                wheelZoomRatio: 0.1, // Yakınlaştırma hızı
-                toggleDragModeOnDblclick: false // Çift tıklama ile modu değiştirmeyi kapattık ki karışmasın
+                zoomable: true,
+                movable: true,
+                wheelZoomRatio: 0.1,
+                toggleDragModeOnDblclick: false
             });
         };
 
         const renderPage = num => {
             pageIsRendering = true;
             pdfDoc.getPage(num).then(page => {
-                const viewport = page.getViewport({ scale: 2.0 }); // Netlik için scale 2.0
+                const viewport = page.getViewport({ scale: 2.0 });
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
                 page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
