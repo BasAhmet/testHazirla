@@ -333,7 +333,6 @@
         });
 
         let selectedAnswer = "-";
-        updateStats(); // İstatistikleri güncelle
         const ansBtns = document.querySelectorAll('.ans-btn');
         ansBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -550,6 +549,7 @@
                 if(!isInfoBlock) {
                     ansBtns.forEach(b => { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('bg-slate-100', 'text-black'); });
                     selectedAnswer = "-";
+                    updateStats(); // İstatistikleri güncelle
                 }
             }
         }
