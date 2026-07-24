@@ -120,9 +120,16 @@
             
             <div id="pdf-container" class="hidden flex-col items-center w-full">
                 <div class="flex items-start justify-between w-full mb-4 bg-slate-50 p-3 rounded border shadow-sm">
-                    <div id="pagination-controls" class="flex items-center gap-2 mt-1">
+                   <div id="pagination-controls" class="flex items-center gap-2 mt-1">
                         <button id="prev-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm font-medium">Önceki</button>
-                        <span class="text-sm font-medium px-2">Sayfa: <span id="page-num" class="text-blue-600 font-bold">0</span> / <span id="page-count">0</span></span>
+                        
+                        <!-- Sayfa numarası alanı input'a çevrildi -->
+                        <span class="text-sm font-medium px-2 flex items-center gap-1">
+                            Sayfa: 
+                            <input type="number" id="page-num-input" class="w-12 h-6 text-center border border-slate-400 rounded text-blue-700 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50" value="0" min="1">
+                            / <span id="page-count">0</span>
+                        </span>
+                    
                         <button id="next-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm font-medium">Sonraki</button>
                     </div>
                     
