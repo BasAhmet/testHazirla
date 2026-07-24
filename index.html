@@ -661,7 +661,15 @@
                     tempElements.push(newPage);
                 }
             }
-
+            
+            // PDF oluşturmadan hemen önce boş sayfaları tespit edip yok eden fonksiyon
+            document.querySelectorAll('.a4-page').forEach(page => {
+                // Eğer sayfada .question-item sınıfına sahip hiçbir şey yoksa o sayfayı sil
+                if (page.querySelectorAll('.question-item').length === 0) {
+                    page.remove();
+                }
+            });
+            // Bitiş
             const allPages = document.querySelectorAll('.a4-page');
             allPages.forEach(page => {
                 // Sadece html2pdf e ait class eklendiğinde devreye girmesi için stil silmiyorum
