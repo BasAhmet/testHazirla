@@ -262,13 +262,24 @@
                     initCropper();
                     if (pageNumIsPending !== null) { renderPage(pageNumIsPending); pageNumIsPending = null; }
                 });
-                document.getElementById('page-num').textContent = num;
+                document.getElementById('page-num-input').value = num;
             });
         };
 
         const queueRenderPage = num => { if (pageIsRendering) pageNumIsPending = num; else renderPage(num); };
         document.getElementById('prev-page').addEventListener('click', () => { if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum); });
         document.getElementById('next-page').addEventListener('click', () => { if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum); });
+        // Manuel sayfa numarası girildiğinde o sayfaya git
+        document.getElementById('page-num-input').addEventListener('change', function(e) {
+            let requestedPage = parseInt(e.target.value);
+            if (requestedPage >= 1 && requestedPage <= pdfDoc.numPages) {
+                pageNum = requestedPage;
+                queueRenderPage(pageNum); // O sayfayı yükle
+            } else {
+                // Geçersiz numara girilirse geri eski numarayı yazdır
+                e.target.value = pageNum;
+            }
+        });
 
         document.getElementById('file-upload').addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -658,7 +669,8 @@
                 filename:     testName + '.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+                jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all'] } // BOŞ SAYFAYI ENGELLEYEN KOD:
             };
 
             html2pdf().set(opt).from(pagesContainer).save().then(() => {
