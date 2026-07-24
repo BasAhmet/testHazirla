@@ -5,18 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Hazırlama Aracı</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
 
+    <!-- Cropper.js -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
+    <!-- HTML to PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+    <!-- SortableJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 
     <style>
@@ -63,8 +68,6 @@
             max-height: 800px; 
             object-fit: contain; 
         }
-
-        /* Koyu Gri Alan ve Kırpma Alanı İçin Özel Belirgin İmleç (Siyah-Beyaz Artı) */
         .custom-cursor-area, 
         .cropper-drag-box.cropper-crop {
             cursor: url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M11%200h2v24h-2zM0%2011h24v2h-24z%22%20fill%3D%22black%22%2F%3E%3Cpath%20d%3D%22M11.5%201v22M1%2011.5h22%22%20stroke%3D%22white%22%20stroke-width%3D%221%22%2F%3E%3C%2Fsvg%3E') 12 12, crosshair !important;
@@ -73,6 +76,7 @@
 </head>
 <body class="bg-slate-200 font-sans h-screen flex overflow-hidden">
 
+    <!-- SOL MENÜ -->
     <aside class="w-80 bg-white border-r border-slate-300 shadow-xl flex flex-col p-4 overflow-y-auto z-10 relative">
         <h2 class="text-xl font-bold text-slate-800 mb-6 border-b pb-2">Sınav Ayarları</h2>
         
@@ -105,6 +109,7 @@
         </button>
     </aside>
 
+    <!-- SAĞ ALAN -->
     <main class="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-8">
         
         <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-6xl border border-slate-300">
@@ -114,20 +119,16 @@
             </div>
             
             <div id="pdf-container" class="hidden flex-col items-center w-full">
-                <div class="flex items-center justify-between w-full mb-4 bg-slate-50 p-3 rounded border shadow-sm">
-                    <div id="pagination-controls" class="flex items-center gap-2">
+                <div class="flex items-start justify-between w-full mb-4 bg-slate-50 p-3 rounded border shadow-sm">
+                    <div id="pagination-controls" class="flex items-center gap-2 mt-1">
                         <button id="prev-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm font-medium">Önceki</button>
                         <span class="text-sm font-medium px-2">Sayfa: <span id="page-num" class="text-blue-600 font-bold">0</span> / <span id="page-count">0</span></span>
                         <button id="next-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm font-medium">Sonraki</button>
                     </div>
                     
-                    <div class="text-xs text-slate-500 flex-1 text-center font-medium">
-                        💡 İpucu: Fare tekerleği (scroll) ile sayfaya yakınlaşıp uzaklaşabilirsin.
-                    </div>
-
-                    <div class="flex items-center gap-4 ml-auto">
-                        <div class="flex items-center gap-1 bg-white border border-slate-300 p-1 rounded">
-                            <span class="text-xs font-bold text-slate-500 mr-1">Cevap:</span>
+                    <div class="flex flex-col gap-2 ml-auto">
+                        <div class="flex items-center gap-1 bg-white border border-slate-300 p-1 rounded justify-end">
+                            <span class="text-xs font-bold text-slate-500 mr-1">Cevap (Seçip Ekleyin):</span>
                             <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition" data-ans="A">A</button>
                             <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition" data-ans="B">B</button>
                             <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition" data-ans="C">C</button>
@@ -135,7 +136,10 @@
                             <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition" data-ans="E">E</button>
                             <button class="ans-btn px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-sm font-bold transition border-l ml-1" data-ans="-">-</button>
                         </div>
-                        <button id="crop-btn" class="px-6 py-2 bg-green-600 text-white text-sm font-bold rounded hover:bg-green-700 transition shadow">Soruyu Ekle</button>
+                        <div class="flex gap-2 justify-end">
+                            <button id="info-btn" class="px-4 py-2 bg-amber-500 text-white text-sm font-bold rounded hover:bg-amber-600 transition shadow" title="Bağlı sorular için metin/paragraf ekler">Paragraf/Metin Ekle</button>
+                            <button id="crop-btn" class="px-6 py-2 bg-green-600 text-white text-sm font-bold rounded hover:bg-green-700 transition shadow">Soruyu Ekle</button>
+                        </div>
                     </div>
                 </div>
 
@@ -288,8 +292,6 @@
                     setTimeout(() => { initCropper(); }, 50);
                 };
                 fileReader.readAsDataURL(file);
-            } else {
-                alert('Lütfen sadece PDF veya Resim formatında bir dosya yükleyin.');
             }
         });
 
@@ -305,10 +307,23 @@
         });
 
         function updateAllQuestionNumbers() {
-            document.querySelectorAll('.question-item').forEach((item, index) => {
-                const qNum = index + 1;
-                item.querySelector('.q-num-text').textContent = qNum + '.';
-                item.setAttribute('data-qnum', qNum);
+            let qNum = 1;
+            document.querySelectorAll('.question-item').forEach((item) => {
+                if (item.getAttribute('data-is-info') === 'true') {
+                    // Bu bir paragraf/metin bloğu, numara atlama
+                    const numEl = item.querySelector('.q-num-text');
+                    if(numEl) numEl.style.display = 'none';
+                    item.removeAttribute('data-qnum');
+                } else {
+                    // Bu bir soru
+                    const numEl = item.querySelector('.q-num-text');
+                    if(numEl) {
+                        numEl.style.display = 'inline-block';
+                        numEl.textContent = qNum + '.';
+                    }
+                    item.setAttribute('data-qnum', qNum);
+                    qNum++;
+                }
             });
         }
 
@@ -358,6 +373,7 @@
                 }
             }
 
+            // Boş sayfaları temizle
             const updatedPages = document.querySelectorAll('.a4-page');
             for (let i = updatedPages.length - 1; i > 0; i--) {
                 const qList = updatedPages[i].querySelector('.questions-list');
@@ -374,11 +390,11 @@
             }
         }
 
-        document.getElementById('crop-btn').addEventListener('click', () => {
+        function handleAdd(isInfoBlock) {
             if (!cropper) return;
 
-            if (selectedAnswer === "-") {
-                const confirmAdd = confirm("Bu soru için bir cevap seçmediniz. Soruyu cevap şıkkı belirtmeden eklemek istiyor musunuz?");
+            if (!isInfoBlock && selectedAnswer === "-") {
+                const confirmAdd = confirm("Bu soru için bir cevap seçmediniz. Soruyu yine de eklemek istiyor musunuz?");
                 if (!confirmAdd) return; 
             }
 
@@ -388,20 +404,41 @@
                 const imgData = croppedCanvas.toDataURL('image/png');
                 const cropData = cropper.getData();
                 const imageData = cropper.getImageData();
-                const isLarge = (cropData.width / imageData.naturalWidth) > 0.55;
+                // Metin blokları varsayılan olarak tüm satırı kaplar
+                const isLarge = isInfoBlock || (cropData.width / imageData.naturalWidth) > 0.55;
                 
                 const questionDiv = document.createElement('div');
                 questionDiv.className = `question-item group relative cursor-move ${isLarge ? 'span-all' : ''}`;
-                questionDiv.setAttribute('data-ans', selectedAnswer);
                 
+                if (isInfoBlock) {
+                    questionDiv.setAttribute('data-is-info', 'true');
+                } else {
+                    questionDiv.setAttribute('data-ans', selectedAnswer);
+                    questionDiv.setAttribute('data-is-info', 'false');
+                }
+                
+                const answerDropdownHTML = isInfoBlock ? 
+                    `<span class="font-bold text-amber-700">📌 Metin / Paragraf (Soru Değil)</span>` 
+                    : 
+                    `<span class="font-bold text-red-700 flex items-center gap-1">Cevap: 
+                        <select class="ans-selector border border-red-300 rounded px-1 py-0.5 text-red-700 font-bold bg-white outline-none cursor-pointer">
+                            <option value="-" ${selectedAnswer === '-' ? 'selected' : ''}>-</option>
+                            <option value="A" ${selectedAnswer === 'A' ? 'selected' : ''}>A</option>
+                            <option value="B" ${selectedAnswer === 'B' ? 'selected' : ''}>B</option>
+                            <option value="C" ${selectedAnswer === 'C' ? 'selected' : ''}>C</option>
+                            <option value="D" ${selectedAnswer === 'D' ? 'selected' : ''}>D</option>
+                            <option value="E" ${selectedAnswer === 'E' ? 'selected' : ''}>E</option>
+                        </select>
+                    </span>`;
+
                 questionDiv.innerHTML = `
-                    <div class="teacher-ui bg-red-100 border border-red-300 p-1.5 rounded-t flex justify-between items-center mb-1 text-xs">
+                    <div class="teacher-ui ${isInfoBlock ? 'bg-amber-100 border-amber-300' : 'bg-red-100 border-red-300'} border p-1.5 rounded-t flex justify-between items-center mb-1 text-xs">
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-red-700">Cevap: ${selectedAnswer}</span>
-                            <div class="flex items-center bg-white rounded border border-red-200 ml-2 shadow-sm">
-                                <button class="space-decrease px-2 py-0.5 hover:bg-slate-100 font-bold text-red-600 border-r border-red-100" title="Boşluğu Azalt">-</button>
+                            ${answerDropdownHTML}
+                            <div class="flex items-center bg-white rounded border border-slate-200 ml-2 shadow-sm">
+                                <button class="space-decrease px-2 py-0.5 hover:bg-slate-100 font-bold text-red-600 border-r border-slate-200" title="Boşluğu Azalt">-</button>
                                 <span class="px-2 text-[10px] font-bold text-slate-600">Boşluk</span>
-                                <button class="space-increase px-2 py-0.5 hover:bg-slate-100 font-bold text-green-600 border-l border-red-100" title="Boşluğu Artır">+</button>
+                                <button class="space-increase px-2 py-0.5 hover:bg-slate-100 font-bold text-green-600 border-l border-slate-200" title="Boşluğu Artır">+</button>
                             </div>
                         </div>
                         <div class="flex items-center gap-1">
@@ -413,7 +450,7 @@
                     </div>
                     <div class="student-question-content flex items-start gap-2 flex-col w-full">
                         <div class="flex items-start gap-2 w-full">
-                            <span class="q-num-text font-bold text-slate-900 text-base min-w-[20px] pt-0.5">1.</span>
+                            <span class="q-num-text font-bold text-slate-900 text-base min-w-[20px] pt-0.5" style="${isInfoBlock ? 'display:none;' : ''}"></span>
                             <div class="flex-1 w-full">
                                 <img src="${imgData}" class="w-full object-contain block" />
                             </div>
@@ -422,6 +459,14 @@
                     </div>
                 `;
                 
+                // Cevap değiştirme event'i
+                if (!isInfoBlock) {
+                    const selectEl = questionDiv.querySelector('.ans-selector');
+                    selectEl.addEventListener('change', function() {
+                        questionDiv.setAttribute('data-ans', this.value);
+                    });
+                }
+
                 const solutionSpace = questionDiv.querySelector('.solution-space');
                 let currentSpace = 0;
 
@@ -430,7 +475,7 @@
                     solutionSpace.style.height = currentSpace + 'px';
                     if(currentSpace > 0) {
                         solutionSpace.classList.add('has-space', 'border', 'border-dashed', 'border-blue-300', 'bg-blue-50', 'mt-2', 'flex', 'items-center', 'justify-center');
-                        solutionSpace.innerHTML = '<span class="text-blue-400 text-xs font-medium solution-text">Çözüm Alanı</span>';
+                        solutionSpace.innerHTML = '<span class="text-blue-400 text-xs font-medium solution-text">Boşluk / Çözüm Alanı</span>';
                     }
                     checkAndFixOverflow();
                 };
@@ -463,12 +508,27 @@
                 
                 checkAndFixOverflow();
                 
-                ansBtns.forEach(b => { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('bg-slate-100', 'text-black'); });
-                selectedAnswer = "-";
+                // Seçimi temizle
+                if(!isInfoBlock) {
+                    ansBtns.forEach(b => { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('bg-slate-100', 'text-black'); });
+                    selectedAnswer = "-";
+                }
             }
-        });
+        }
+
+        document.getElementById('crop-btn').addEventListener('click', () => handleAdd(false));
+        document.getElementById('info-btn').addEventListener('click', () => handleAdd(true));
 
         document.getElementById('download-btn').addEventListener('click', () => {
+            // İndirmeden önce manuel boş sayfa temizliği (Güvenlik önlemi)
+            const checkPages = document.querySelectorAll('.a4-page');
+            for (let i = checkPages.length - 1; i > 0; i--) {
+                const qList = checkPages[i].querySelector('.questions-list');
+                if (!qList || qList.children.length === 0) {
+                    checkPages[i].remove();
+                }
+            }
+
             const pagesContainer = document.getElementById('pages-container');
             const testName = document.getElementById('input-test-name').value || 'Test_Kagidi';
             const ansPos = document.getElementById('select-ans-pos').value;
@@ -476,6 +536,7 @@
 
             const unmarkedQuestions = [];
             document.querySelectorAll('.question-item').forEach(item => {
+                if (item.getAttribute('data-is-info') === 'true') return; // Metin bloklarını atla
                 if (item.getAttribute('data-ans') === "-") {
                     unmarkedQuestions.push(item.getAttribute('data-qnum'));
                 }
@@ -501,8 +562,12 @@
                     const containerRect = page.querySelector('.questions-list').getBoundingClientRect();
                     let leftAns = [];
                     let rightAns = [];
+                    let hasQuestions = false;
 
                     questions.forEach(q => {
+                        if (q.getAttribute('data-is-info') === 'true') return; // Metin bloklarını atla
+                        
+                        hasQuestions = true;
                         const qNum = q.getAttribute('data-qnum');
                         const ans = q.getAttribute('data-ans');
                         const qRect = q.getBoundingClientRect();
@@ -515,59 +580,70 @@
                         }
                     });
 
-                    const ansFooter = document.createElement('div');
-                    ansFooter.className = 'temp-ans-inline flex justify-between items-center border-t-2 border-slate-400 pt-2 pb-1 mt-auto text-xs font-semibold text-slate-700 bg-white w-full';
-                    
-                    const leftDiv = document.createElement('div');
-                    leftDiv.className = 'w-1/2 pr-4 flex flex-wrap gap-y-1';
-                    leftDiv.innerHTML = leftAns.join('');
+                    if (hasQuestions) {
+                        const ansFooter = document.createElement('div');
+                        ansFooter.className = 'temp-ans-inline flex justify-between items-center border-t-2 border-slate-400 pt-2 pb-1 mt-auto text-xs font-semibold text-slate-700 bg-white w-full';
+                        
+                        const leftDiv = document.createElement('div');
+                        leftDiv.className = 'w-1/2 pr-4 flex flex-wrap gap-y-1';
+                        leftDiv.innerHTML = leftAns.join('');
 
-                    const rightDiv = document.createElement('div');
-                    rightDiv.className = 'w-1/2 pl-4 border-l border-slate-300 flex flex-wrap gap-y-1';
-                    rightDiv.innerHTML = rightAns.join('');
+                        const rightDiv = document.createElement('div');
+                        rightDiv.className = 'w-1/2 pl-4 border-l border-slate-300 flex flex-wrap gap-y-1';
+                        rightDiv.innerHTML = rightAns.join('');
 
-                    ansFooter.appendChild(leftDiv);
-                    ansFooter.appendChild(rightDiv);
+                        ansFooter.appendChild(leftDiv);
+                        ansFooter.appendChild(rightDiv);
 
-                    const pageFooter = page.querySelector('.page-footer');
-                    page.insertBefore(ansFooter, pageFooter);
-                    tempElements.push(ansFooter);
+                        const pageFooter = page.querySelector('.page-footer');
+                        page.insertBefore(ansFooter, pageFooter);
+                        tempElements.push(ansFooter);
+                    }
                 });
 
             } else if (ansPos === 'end-page') {
-                const newPage = document.createElement('div');
-                newPage.className = 'a4-page bg-white relative flex flex-col items-center pt-16'; 
-                
-                newPage.innerHTML = `
-                    <div class="w-full max-w-3xl text-center border-b-2 border-slate-800 pb-4 mb-10">
-                        <h2 class="text-2xl font-extrabold uppercase tracking-widest text-slate-800">CEVAP ANAHTARI</h2>
-                    </div>
-                    <div class="w-full max-w-3xl flex justify-center">
-                        <div class="grid grid-cols-5 gap-x-12 gap-y-6 ans-grid"></div>
-                    </div>
-                `;
-                
-                const grid = newPage.querySelector('.ans-grid');
+                let hasAnyQuestion = false;
+                let gridHTML = '';
+
                 document.querySelectorAll('.question-item').forEach(item => {
+                    if (item.getAttribute('data-is-info') === 'true') return;
+                    
+                    hasAnyQuestion = true;
                     const qNum = item.getAttribute('data-qnum');
                     const ans = item.getAttribute('data-ans');
-                    grid.innerHTML += `
+                    gridHTML += `
                         <div class="flex items-center justify-center gap-3">
                             <span class="text-xl font-bold text-slate-500 w-8 text-right">${qNum}.</span>
                             <span class="text-xl font-extrabold text-slate-800 border-2 border-slate-300 rounded px-3 py-1 bg-slate-50 w-12 text-center shadow-sm">${ans}</span>
                         </div>
                     `;
                 });
-                
-                pagesContainer.appendChild(newPage);
-                tempElements.push(newPage);
+
+                if (hasAnyQuestion) {
+                    const newPage = document.createElement('div');
+                    newPage.className = 'a4-page bg-white relative flex flex-col items-center pt-16'; 
+                    
+                    newPage.innerHTML = `
+                        <div class="w-full max-w-3xl text-center border-b-2 border-slate-800 pb-4 mb-10">
+                            <h2 class="text-2xl font-extrabold uppercase tracking-widest text-slate-800">CEVAP ANAHTARI</h2>
+                        </div>
+                        <div class="w-full max-w-3xl flex justify-center">
+                            <div class="grid grid-cols-5 gap-x-12 gap-y-6 ans-grid">${gridHTML}</div>
+                        </div>
+                    `;
+                    
+                    pagesContainer.appendChild(newPage);
+                    tempElements.push(newPage);
+                }
             }
 
+            // PDF dışa aktarma öncesi taşmaları önlemek için CSS temizliği
             const allPages = document.querySelectorAll('.a4-page');
             allPages.forEach(page => {
                 page.style.marginBottom = '0';
                 page.style.boxShadow = 'none';
                 page.style.border = 'none';
+                page.style.overflow = 'hidden'; // Boş sayfa oluşmasını engeller
             });
 
             const opt = {
@@ -579,6 +655,7 @@
             };
 
             html2pdf().set(opt).from(pagesContainer).save().then(() => {
+                // İşlem bittikten sonra UI'yi eski haline getir
                 tempElements.forEach(el => el.remove());
 
                 document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = '');
@@ -592,6 +669,7 @@
                     page.style.marginBottom = '';
                     page.style.boxShadow = '';
                     page.style.border = '';
+                    page.style.overflow = 'hidden';
                 });
             });
         });
