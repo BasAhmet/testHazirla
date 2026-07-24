@@ -118,6 +118,14 @@
                 <option value="end-page">Ayrı Sayfada (Sonda)</option>
             </select>
         </div>
+        <!-- İstatistikler Kutusu -->
+        <div class="border-t border-slate-200 pt-4 mt-4">
+            <h3 class="font-bold text-slate-700 text-sm mb-2">Sınav İstatistikleri</h3>
+            <div class="bg-slate-50 p-3 rounded border border-slate-200 flex justify-between items-center">
+                <span class="text-sm text-slate-600 font-medium">Toplam Soru:</span>
+                <span id="total-q-count" class="text-xl font-bold text-blue-600">0</span>
+            </div>
+        </div>
 
         <button id="download-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition shadow-lg mt-auto">
             Kağıdı Hazırla (PDF İndir)
@@ -325,6 +333,7 @@
         });
 
         let selectedAnswer = "-";
+        updateStats(); // İstatistikleri güncelle
         const ansBtns = document.querySelectorAll('.ans-btn');
         ansBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -415,6 +424,11 @@
                 updateAllQuestionNumbers();
             }
         }
+        function updateStats() {
+                // Sadece soru olanları say (metin/bilgi kutularını hariç tut)
+                const questions = document.querySelectorAll('.question-item:not([data-is-info="true"])');
+                document.getElementById('total-q-count').textContent = questions.length;
+            }
 
         function handleAdd(isInfoBlock) {
             if (!cropper) return;
@@ -525,6 +539,7 @@
                 questionDiv.querySelector('.delete-btn').onclick = function() {
                     questionDiv.remove();
                     checkAndFixOverflow();
+                    updateStats();
                 };
                 
                 const pages = document.querySelectorAll('.a4-page');
