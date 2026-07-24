@@ -40,6 +40,21 @@
             overflow: hidden; 
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1); 
         }
+        
+        /* 
+           Boş sayfa sorununun temel çözümü: 
+           Yazdırılırken a4-page sınıfındaki tüm boşlukları, gölgeleri ve sınırları (overflow) sıfırlıyoruz. 
+           html2pdf bu sınıfı direkt baz aldığı için aradaki pikseller boş sayfaya neden oluyordu.
+        */
+        .html2pdf__container .a4-page {
+            margin-bottom: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            break-after: avoid !important;
+            page-break-after: avoid !important;
+        }
+
         .two-columns { 
             column-count: 2; 
             column-gap: 2.5rem; 
@@ -120,16 +135,13 @@
             
             <div id="pdf-container" class="hidden flex-col items-center w-full">
                 <div class="flex items-start justify-between w-full mb-4 bg-slate-50 p-3 rounded border shadow-sm">
-                   <div id="pagination-controls" class="flex items-center gap-2 mt-1">
+                    <div id="pagination-controls" class="flex items-center gap-2 mt-1">
                         <button id="prev-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm font-medium">Önceki</button>
-                        
-                        <!-- Sayfa numarası alanı input'a çevrildi -->
                         <span class="text-sm font-medium px-2 flex items-center gap-1">
                             Sayfa: 
                             <input type="number" id="page-num-input" class="w-12 h-6 text-center border border-slate-400 rounded text-blue-700 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50" value="0" min="1">
                             / <span id="page-count">0</span>
                         </span>
-                    
                         <button id="next-page" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 text-sm font-medium">Sonraki</button>
                     </div>
                     
@@ -269,14 +281,13 @@
         const queueRenderPage = num => { if (pageIsRendering) pageNumIsPending = num; else renderPage(num); };
         document.getElementById('prev-page').addEventListener('click', () => { if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum); });
         document.getElementById('next-page').addEventListener('click', () => { if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum); });
-        // Manuel sayfa numarası girildiğinde o sayfaya git
+        
         document.getElementById('page-num-input').addEventListener('change', function(e) {
             let requestedPage = parseInt(e.target.value);
             if (requestedPage >= 1 && requestedPage <= pdfDoc.numPages) {
                 pageNum = requestedPage;
-                queueRenderPage(pageNum); // O sayfayı yükle
+                queueRenderPage(pageNum);
             } else {
-                // Geçersiz numara girilirse geri eski numarayı yazdır
                 e.target.value = pageNum;
             }
         });
@@ -328,12 +339,10 @@
             let qNum = 1;
             document.querySelectorAll('.question-item').forEach((item) => {
                 if (item.getAttribute('data-is-info') === 'true') {
-                    // Bu bir paragraf/metin bloğu, numara atlama
                     const numEl = item.querySelector('.q-num-text');
                     if(numEl) numEl.style.display = 'none';
                     item.removeAttribute('data-qnum');
                 } else {
-                    // Bu bir soru
                     const numEl = item.querySelector('.q-num-text');
                     if(numEl) {
                         numEl.style.display = 'inline-block';
@@ -391,7 +400,6 @@
                 }
             }
 
-            // Boş sayfaları temizle
             const updatedPages = document.querySelectorAll('.a4-page');
             for (let i = updatedPages.length - 1; i > 0; i--) {
                 const qList = updatedPages[i].querySelector('.questions-list');
@@ -422,7 +430,6 @@
                 const imgData = croppedCanvas.toDataURL('image/png');
                 const cropData = cropper.getData();
                 const imageData = cropper.getImageData();
-                // Metin blokları varsayılan olarak tüm satırı kaplar
                 const isLarge = isInfoBlock || (cropData.width / imageData.naturalWidth) > 0.55;
                 
                 const questionDiv = document.createElement('div');
@@ -477,7 +484,6 @@
                     </div>
                 `;
                 
-                // Cevap değiştirme event'i
                 if (!isInfoBlock) {
                     const selectEl = questionDiv.querySelector('.ans-selector');
                     selectEl.addEventListener('change', function() {
@@ -526,7 +532,6 @@
                 
                 checkAndFixOverflow();
                 
-                // Seçimi temizle
                 if(!isInfoBlock) {
                     ansBtns.forEach(b => { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('bg-slate-100', 'text-black'); });
                     selectedAnswer = "-";
@@ -538,7 +543,6 @@
         document.getElementById('info-btn').addEventListener('click', () => handleAdd(true));
 
         document.getElementById('download-btn').addEventListener('click', () => {
-            // İndirmeden önce manuel boş sayfa temizliği (Güvenlik önlemi)
             const checkPages = document.querySelectorAll('.a4-page');
             for (let i = checkPages.length - 1; i > 0; i--) {
                 const qList = checkPages[i].querySelector('.questions-list');
@@ -554,14 +558,17 @@
 
             const unmarkedQuestions = [];
             document.querySelectorAll('.question-item').forEach(item => {
-                if (item.getAttribute('data-is-info') === 'true') return; // Metin bloklarını atla
+                if (item.getAttribute('data-is-info') === 'true') return; 
                 if (item.getAttribute('data-ans') === "-") {
                     unmarkedQuestions.push(item.getAttribute('data-qnum'));
                 }
             });
 
             if (unmarkedQuestions.length > 0) {
-                const confirmPDF = confirm(`Dikkat! Bazı soruların cevapları seçilmedi (boş):\nSoru No: ${unmarkedQuestions.join(', ')}\n\nYine de PDF indirmek istiyor musunuz?`);
+                const confirmPDF = confirm(`Dikkat! Bazı soruların cevapları seçilmedi (boş):
+Soru No: ${unmarkedQuestions.join(', ')}
+
+Yine de PDF indirmek istiyor musunuz?`);
                 if (!confirmPDF) return; 
             }
 
@@ -583,7 +590,7 @@
                     let hasQuestions = false;
 
                     questions.forEach(q => {
-                        if (q.getAttribute('data-is-info') === 'true') return; // Metin bloklarını atla
+                        if (q.getAttribute('data-is-info') === 'true') return; 
                         
                         hasQuestions = true;
                         const qNum = q.getAttribute('data-qnum');
@@ -655,26 +662,26 @@
                 }
             }
 
-            // PDF dışa aktarma öncesi taşmaları önlemek için CSS temizliği
             const allPages = document.querySelectorAll('.a4-page');
             allPages.forEach(page => {
-                page.style.marginBottom = '0';
-                page.style.boxShadow = 'none';
-                page.style.border = 'none';
-                page.style.overflow = 'hidden'; // Boş sayfa oluşmasını engeller
+                // Sadece html2pdf e ait class eklendiğinde devreye girmesi için stil silmiyorum
+                // çünkü css de hallettik. 
             });
 
+            // html2pdf de pagebreak ayarlarını güncelledim
             const opt = {
                 margin:       0,
                 filename:     testName + '.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' },
-                pagebreak:    { mode: ['avoid-all'] } // BOŞ SAYFAYI ENGELLEYEN KOD:
+                jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' }
             };
 
+            // Önce sayfalara wrapper class ekliyorum ki print css devreye girsin
+            pagesContainer.classList.add('html2pdf__container');
+
             html2pdf().set(opt).from(pagesContainer).save().then(() => {
-                // İşlem bittikten sonra UI'yi eski haline getir
+                pagesContainer.classList.remove('html2pdf__container');
                 tempElements.forEach(el => el.remove());
 
                 document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = '');
@@ -682,13 +689,6 @@
                     space.classList.add('border', 'border-dashed', 'border-blue-300', 'bg-blue-50');
                     const textEl = space.querySelector('.solution-text');
                     if(textEl) textEl.style.display = 'block';
-                });
-
-                allPages.forEach(page => {
-                    page.style.marginBottom = '';
-                    page.style.boxShadow = '';
-                    page.style.border = '';
-                    page.style.overflow = 'hidden';
                 });
             });
         });
