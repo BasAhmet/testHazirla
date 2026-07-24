@@ -544,6 +544,13 @@
 
         document.getElementById('download-btn').addEventListener('click', () => {
             const checkPages = document.querySelectorAll('.a4-page');
+            // PDF oluşturmadan hemen önce boş sayfaları tespit edip yok eden fonksiyon
+            document.querySelectorAll('.a4-page').forEach(page => {
+                // Eğer sayfada .question-item sınıfına sahip hiçbir şey yoksa o sayfayı sil
+                if (page.querySelectorAll('.question-item').length === 0) {
+                    page.remove();
+                }
+            }); // Bitiş
             for (let i = checkPages.length - 1; i > 0; i--) {
                 const qList = checkPages[i].querySelector('.questions-list');
                 if (!qList || qList.children.length === 0) {
@@ -566,10 +573,10 @@
 
             if (unmarkedQuestions.length > 0) {
                 const confirmPDF = confirm(`Dikkat! Bazı soruların cevapları seçilmedi (boş):
-Soru No: ${unmarkedQuestions.join(', ')}
-
-Yine de PDF indirmek istiyor musunuz?`);
-                if (!confirmPDF) return; 
+                Soru No: ${unmarkedQuestions.join(', ')}
+                
+                Yine de PDF indirmek istiyor musunuz?`);
+                                if (!confirmPDF) return; 
             }
 
             document.querySelectorAll('.teacher-ui').forEach(ui => ui.style.display = 'none');
